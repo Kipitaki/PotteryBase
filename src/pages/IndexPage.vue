@@ -62,7 +62,7 @@
         </div>
       </q-card>
 
-      <!-- Featured -->
+      <!-- Your Pieces -->
       <div class="row items-center q-mb-md">
         <div class="text-h6 text-weight-bold col">Your pieces</div>
         <q-btn
@@ -74,16 +74,13 @@
         />
       </div>
 
-      <!-- Pieces grid -->
       <div class="row q-col-gutter-md q-mb-xl">
-        <!-- Spinner only if nothing loaded yet -->
-        <template v-if="!safePieces.length && loading">
+        <template v-if="!userPieces.length && loading">
           <q-spinner size="30px" color="primary" class="q-ma-md" />
         </template>
 
-        <!-- Show pieces once they exist -->
-        <template v-else-if="safePieces.length">
-          <template v-for="p in safePieces" :key="p.id">
+        <template v-else-if="userPieces.length">
+          <template v-for="p in userPieces" :key="p.id">
             <shelf-piece-card
               v-if="p?.id"
               :piece="p"
@@ -93,10 +90,37 @@
           </template>
         </template>
 
-        <!-- Empty state -->
         <template v-else>
           <div class="col-12 text-center text-grey q-mt-md">
             No pieces yet. Click <b>Add piece</b> to get started!
+          </div>
+        </template>
+      </div>
+
+      <!-- Community Pieces -->
+      <div class="row items-center q-mb-md">
+        <div class="text-h6 text-weight-bold col">Community pieces</div>
+      </div>
+
+      <div class="row q-col-gutter-md q-mb-xl">
+        <template v-if="!communityPieces.length && loading">
+          <q-spinner size="30px" color="primary" class="q-ma-md" />
+        </template>
+
+        <template v-else-if="communityPieces.length">
+          <template v-for="p in communityPieces" :key="p.id">
+            <shelf-piece-card
+              v-if="p?.id"
+              :piece="p"
+              :subtitle="''"
+              class="col-12 col-sm-6 col-md-3 col-lg-2"
+            />
+          </template>
+        </template>
+
+        <template v-else>
+          <div class="col-12 text-center text-grey q-mt-md">
+            No public pieces in the community yet.
           </div>
         </template>
       </div>
@@ -137,9 +161,11 @@
               <div class="text-caption text-grey-7 q-mb-md">Populated from fixtures and store</div>
               <q-list separator>
                 <q-item v-for="a in activity" :key="a.id">
-                  <q-item-section avatar
-                    ><q-avatar rounded><img :src="a.avatar" alt="avatar" /></q-avatar
-                  ></q-item-section>
+                  <q-item-section avatar>
+                    <q-avatar rounded>
+                      <img :src="a.avatar" alt="avatar" />
+                    </q-avatar>
+                  </q-item-section>
                   <q-item-section>
                     <q-item-label>
                       <span class="text-weight-medium">{{ a.user }}</span>
@@ -148,7 +174,9 @@
                     </q-item-label>
                     <q-item-label caption>{{ a.time }}</q-item-label>
                   </q-item-section>
-                  <q-item-section side><q-btn flat round dense icon="more_vert" /></q-item-section>
+                  <q-item-section side>
+                    <q-btn flat round dense icon="more_vert" />
+                  </q-item-section>
                 </q-item>
               </q-list>
             </q-card-section>
@@ -192,8 +220,19 @@ const user = useUserData()
 
 // --- Computeds ---
 const isAuth = computed(() => isAuthenticated.value)
-const safePieces = computed(() => piecesStore.all?.value ?? [])
+const allPieces = computed(() => piecesStore.all?.value ?? [])
 const loading = computed(() => piecesStore.loading)
+
+const userPieces = computed(() => {
+  if (!user.value) return []
+  return allPieces.value.filter((p) => p.owner_id === user.value.id)
+})
+
+// Community = all other pieces (not owned by this user)
+const communityPieces = computed(() => {
+  if (!user.value) return []
+  return allPieces.value.filter((p) => p.owner_id !== user.value.id)
+})
 
 const stats = computed(() => pottery.stats)
 const activity = computed(() => pottery.activity)

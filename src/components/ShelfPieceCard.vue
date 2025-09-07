@@ -23,9 +23,9 @@
         {{ stageLabel }}
       </q-chip>
 
-      <!-- Visibility chip -->
+      <!-- Visibility chip OR Owner chip -->
       <q-chip
-        v-if="visibilityLabel"
+        v-if="isOwner"
         class="visibility-chip"
         :color="visibilityColor"
         text-color="white"
@@ -36,14 +36,44 @@
         <q-icon :name="visibilityIcon" size="12px" class="q-mr-xs" />
         {{ visibilityLabel }}
       </q-chip>
+      <q-chip
+        v-else
+        class="visibility-chip"
+        color="grey-7"
+        text-color="white"
+        dense
+        square
+        size="sm"
+      >
+        <q-icon name="person" size="12px" class="q-mr-xs" />
+        {{ piece.profile?.display_name || 'Unknown Owner' }}
+      </q-chip>
 
-      <!-- Edit button -->
-      <q-btn class="edit-btn" icon="edit" dense round flat size="sm" @click="goEdit" />
-      <!-- View button -->
-      <q-btn class="view-btn" icon="visibility" dense round flat size="sm" @click="goView" />
-
-      <!-- Upload button -->
+      <!-- Edit button (only if owner) -->
       <q-btn
+        v-if="isOwner"
+        class="edit-btn"
+        icon="edit"
+        dense
+        round
+        flat
+        size="sm"
+        @click="goEdit"
+      />
+      <!-- View button -->
+      <q-btn
+        class="view-btn"
+        icon="visibility"
+        dense
+        round
+        flat
+        size="sm"
+        :class="{ 'view-btn-owner': isOwner, 'view-btn-not-owner': !isOwner }"
+        @click="goView"
+      />
+      <!-- Upload button (only if owner) -->
+      <q-btn
+        v-if="isOwner"
         class="upload-btn"
         icon="add_photo_alternate"
         dense
@@ -134,13 +164,17 @@ import { useRouter } from 'vue-router'
 import { nhost } from 'boot/nhost'
 import { usePiecesStore } from 'src/stores/pieces'
 
-/* ---------- Router + Store ---------- */
 const router = useRouter()
 const piecesStore = usePiecesStore()
 
-/* ---------- Props ---------- */
 const props = defineProps({
   piece: { type: Object, required: true },
+})
+
+/* ---------- Auth + Ownership ---------- */
+const isOwner = computed(() => {
+  const user = nhost.auth.getUser()
+  return props.piece?.owner_id && user?.id === props.piece.owner_id
 })
 
 /* ============================================================
@@ -151,12 +185,10 @@ const currentPhotoId = ref(null)
 const fileInput = ref(null)
 const isDragOver = ref(false)
 
-// Initialize from DB
 onMounted(() => {
   photos.value = props.piece?.piece_images || []
 })
 
-// Main photo computed
 const mainPhotoUrl = computed(() => {
   const current = photos.value.find((p) => p.id === currentPhotoId.value)
   if (current) return current.url
@@ -164,41 +196,30 @@ const mainPhotoUrl = computed(() => {
   return main?.url || 'https://picsum.photos/800/600?grayscale'
 })
 
-// Thumbnail selection
 function selectThumbnail(id) {
   currentPhotoId.value = id
 }
-
-// File input trigger
 function triggerFileInput() {
   fileInput.value?.click()
 }
-
-// Handle file input
 async function handleFileInput(e) {
   const files = e.target.files
   if (!files.length) return
   await saveFiles(Array.from(files))
   e.target.value = ''
 }
-
-// Drag events
 function onDragOver() {
   isDragOver.value = true
 }
 function onDragLeave() {
   isDragOver.value = false
 }
-
-// Handle drop
 async function handleDrop(e) {
   isDragOver.value = false
   const files = e.dataTransfer.files
   if (!files.length) return
   await saveFiles(Array.from(files))
 }
-
-// Save files: upload + insert
 async function saveFiles(files) {
   for (const file of files) {
     if (!file.type.startsWith('image/')) continue
@@ -209,17 +230,13 @@ async function saveFiles(files) {
         options: { public: true },
       })
       if (error) throw error
-
       const url = nhost.storage.getPublicUrl({ fileId: fileMetadata.id })
-
       const newImg = await piecesStore.addImage({
         piece_id: props.piece.id,
         file_id: fileMetadata.id,
         url,
         is_main: photos.value.length === 0,
       })
-
-      // ✅ replace instead of push
       photos.value = [...photos.value, newImg]
     } catch (err) {
       console.error('Image upload failed', err)
@@ -229,6 +246,7 @@ async function saveFiles(files) {
 function goView() {
   router.push({ name: 'viewpiece', query: { id: props.piece.id } })
 }
+
 /* ============================================================
    STAGE HANDLING
    ============================================================ */
@@ -262,9 +280,7 @@ const COLORS = {
   sold_posted: 'purple-3',
   sold_kept: 'brown-3',
 }
-
 const stageHistories = computed(() => props.piece?.piece_stage_histories || [])
-
 const stageKey = computed(() => {
   const completed = stageHistories.value.map((h) => h.stage)
   for (let i = STAGE_ORDER.length - 1; i >= 0; i--) {
@@ -272,7 +288,6 @@ const stageKey = computed(() => {
   }
   return null
 })
-
 const stageLabel = computed(() => (stageKey.value ? LABELS[stageKey.value] : ''))
 const stageColor = computed(() => (stageKey.value ? COLORS[stageKey.value] : 'blue-grey-4'))
 
@@ -285,31 +300,26 @@ const VISIBILITY_LABELS = {
   community_group: 'Group',
   private: 'Private',
 }
-
 const VISIBILITY_COLORS = {
   public: 'green',
   community: 'blue',
   community_group: 'purple',
   private: 'grey-6',
 }
-
 const VISIBILITY_ICONS = {
   public: 'public',
   community: 'group',
   community_group: 'groups',
   private: 'lock',
 }
-
 const visibilityLabel = computed(() => {
   const visibility = props.piece?.visibility || 'private'
   return VISIBILITY_LABELS[visibility] || 'Private'
 })
-
 const visibilityColor = computed(() => {
   const visibility = props.piece?.visibility || 'private'
   return VISIBILITY_COLORS[visibility] || 'grey-6'
 })
-
 const visibilityIcon = computed(() => {
   const visibility = props.piece?.visibility || 'private'
   return VISIBILITY_ICONS[visibility] || 'lock'
@@ -386,10 +396,17 @@ function goEdit() {
 .thumb-img:hover {
   border-color: #42a5f5;
 }
-.view-btn {
-  position: absolute;
-  right: 74px; /* adjust so it sits left of edit/upload */
+.view-btn-owner {
+  right: 74px; /* sits left of edit/upload when owner */
   top: 6px;
   background: white;
+  position: absolute;
+}
+
+.view-btn-not-owner {
+  right: 6px; /* bump to the far right when not owner */
+  top: 6px;
+  background: white;
+  position: absolute;
 }
 </style>

@@ -129,6 +129,7 @@ import { Notify } from 'quasar'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   pieceId: { type: Number, default: null }, // piece ID for auto-save
+  isHydrating: { type: Boolean, default: false }, // prevent auto-save during initial data loading
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -266,7 +267,7 @@ async function onFieldChange(idx, field, value) {
   const currentRow = rowsValue.value[idx]
 
   // Auto-save to database if pieceId is provided and row has ID
-  if (isAutoSaveMode.value && currentRow.id) {
+  if (isAutoSaveMode.value && currentRow.id && !props.isHydrating) {
     try {
       const payload = {}
       payload[field] = value

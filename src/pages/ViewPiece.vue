@@ -10,69 +10,75 @@
     />
 
     <!-- Photos -->
-    <photo-gallery-editor v-model="form.photos" class="q-mb-md" readonly />
+    <section-card>
+      <template #title>Photos</template>
+      <div class="row q-gutter-sm justify-center">
+        <q-img
+          v-for="(p, idx) in form.photos"
+          :key="p.id || idx"
+          :src="p.url"
+          ratio="1"
+          style="width: 200px; height: 200px; border-radius: 8px"
+          class="shadow-1"
+        />
+      </div>
+    </section-card>
 
     <div class="row q-col-gutter-md">
       <!-- LEFT: Stages -->
       <div class="col-12 col-md-4">
-        <stage-checklist
-          :stages="STAGES"
-          v-model:stageDates="form.stageDates"
-          v-model:stageLocation="form.stageLocation"
-          readonly
-        />
+        <section-card>
+          <template #title>Stages</template>
+          <div class="column q-gutter-sm">
+            <div v-for="s in filledStages" :key="s.key" class="row items-center q-gutter-sm">
+              <q-chip color="blue-3" text-color="black" size="md" square>
+                {{ stageLabelMap[s.key] }}
+              </q-chip>
+              <div class="text-caption text-grey-8">{{ s.date }}</div>
+            </div>
+          </div>
+        </section-card>
       </div>
 
       <!-- RIGHT: Clay / Glaze / Firing / Notes -->
       <div class="col-12 col-md-8">
-        <!-- Clays -->
-        <section-card>
-          <template #title>Clays</template>
-          <div class="row q-gutter-xs wrap">
-            <q-chip
-              v-for="c in form.clays"
-              :key="c.id"
-              color="brown-3"
-              text-color="black"
-              dense
-              size="sm"
-            >
-              {{ c.clayName }}
-            </q-chip>
-          </div>
-        </section-card>
-
         <!-- Glazes -->
         <section-card>
           <template #title>Glazes</template>
-          <div class="row q-gutter-xs wrap">
-            <q-chip
-              v-for="g in form.glazes"
-              :key="g.id"
-              color="teal-3"
-              text-color="black"
-              dense
-              size="sm"
-            >
-              {{ g.glazeId ? g.glazeId : 'Unknown Glaze' }}
-            </q-chip>
+          <div class="column q-gutter-sm">
+            <div v-for="g in form.glazes" :key="g.id" class="row items-center q-gutter-sm">
+              <q-chip color="teal-3" text-color="black" size="md" square>
+                {{ g.glazeName || 'Unknown Glaze' }}
+              </q-chip>
+              <div class="text-body2">Layer: {{ g.layer || '-' }}</div>
+              <div class="text-body2">Method: {{ g.method || '-' }}</div>
+              <div class="text-body2">Notes: {{ g.notes || '-' }}</div>
+            </div>
+          </div>
+        </section-card>
+
+        <!-- Clays -->
+        <section-card>
+          <template #title>Clays</template>
+          <div class="column q-gutter-sm">
+            <div v-for="c in form.clays" :key="c.id" class="row items-center q-gutter-sm">
+              <q-chip color="brown-3" text-color="black" size="md" square>
+                {{ c.clayName }}
+              </q-chip>
+              <div class="text-body2">Notes: {{ c.notes || '-' }}</div>
+            </div>
           </div>
         </section-card>
 
         <!-- Firings -->
         <section-card>
           <template #title>Firings</template>
-          <div class="row q-gutter-xs wrap">
-            <q-chip
-              v-for="f in form.firings"
-              :key="f.id"
-              color="red-3"
-              text-color="black"
-              dense
-              size="sm"
-            >
-              Cone {{ f.cone < 10 ? '0' + f.cone : f.cone }}
-            </q-chip>
+          <div class="column q-gutter-sm">
+            <div v-for="f in form.firings" :key="f.id" class="row items-center q-gutter-sm">
+              <q-chip color="red-3" text-color="black" size="md" square> Cone {{ f.cone }} </q-chip>
+              <div class="text-body2">Method: {{ f.method || '-' }}</div>
+              <div class="text-body2">Notes: {{ f.notes || '-' }}</div>
+            </div>
           </div>
         </section-card>
 
@@ -96,8 +102,6 @@ import { reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import PieceHeaderBar from 'src/components/PieceHeaderBar.vue'
-import PhotoGalleryEditor from 'src/components/PhotoGalleryEditor.vue'
-import StageChecklist from 'src/components/StageChecklist.vue'
 import SectionCard from 'src/components/SectionCard.vue'
 import { usePiecesStore } from 'src/stores/pieces'
 
@@ -139,30 +143,55 @@ const form = reactive({
 
 /* ---------- Hydrate form ---------- */
 function hydrateForm(piece) {
-  form.title = piece.title
+  form.title = piece.title || ''
   form.share = piece.visibility || 'private'
   form.notes = piece.notes || ''
 
+  // Clays
   form.clays =
     piece.piece_clays?.map((c) => ({
       id: c.id,
-      clayName: c.clay_body?.name,
+      clayName: c.clay_body?.name || 'Unknown Clay',
+      notes: c.notes || '',
     })) || []
 
+  // Glazes
   form.glazes =
     piece.piece_glazes?.map((g) => ({
       id: g.id,
-      glazeId: g.glaze?.name,
+      glazeName: g.glaze?.name || 'Unknown Glaze',
+      layer: g.layer || '',
+      method: g.method || '',
+      notes: g.notes || '',
     })) || []
 
-  form.firings = piece.piece_firings || []
-  form.photos = piece.piece_images || []
+  // Firings
+  form.firings =
+    piece.piece_firings?.map((f) => ({
+      id: f.id,
+      cone: f.cone || '',
+      method: f.method || '',
+      notes: f.notes || '',
+    })) || []
 
-  form.stageDates =
-    piece.piece_stage_histories?.reduce((acc, sh) => {
-      acc[sh.stage] = sh.date
-      return acc
-    }, emptyStageDates()) || emptyStageDates()
+  // Photos (normalize shape and prefer is_main if available)
+  form.photos =
+    piece.piece_images?.map((img) => ({
+      id: img.id,
+      url: img.url || img.image_url || '', // adjust to match your API
+      is_main: img.is_main || false,
+    })) || []
+
+  // Stages → normalize to yyyy-MM-dd
+  const stageDates = emptyStageDates()
+  if (piece.piece_stage_histories?.length) {
+    piece.piece_stage_histories.forEach((sh) => {
+      if (sh.stage) {
+        stageDates[sh.stage] = sh.date ? new Date(sh.date).toISOString().split('T')[0] : ''
+      }
+    })
+  }
+  form.stageDates = stageDates
 }
 
 /* ---------- Load existing piece ---------- */
@@ -173,6 +202,14 @@ onMounted(async () => {
     if (piece) hydrateForm(piece)
   }
 })
+const filledStages = computed(() =>
+  stageOrder
+    .filter((k) => form.stageDates[k])
+    .map((k) => ({
+      key: k,
+      date: form.stageDates[k],
+    })),
+)
 
 /* ---------- Latest stage ---------- */
 const latestStage = computed(() => {

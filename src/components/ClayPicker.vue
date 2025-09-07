@@ -107,6 +107,7 @@ import { Notify } from 'quasar'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] }, // rows live in parent; we only emit updates
   pieceId: { type: Number, default: null }, // piece ID for auto-save
+  isHydrating: { type: Boolean, default: false }, // prevent auto-save during initial data loading
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -181,7 +182,7 @@ async function addClayRow(clayId, clayName = '') {
   const newRow = { id: null, clayId, clayName, notes: '' }
 
   // Auto-save to database if pieceId is provided
-  if (isAutoSaveMode.value) {
+  if (isAutoSaveMode.value && !props.isHydrating) {
     try {
       const result = await piecesStore.addClayToPiece({
         piece_id: props.pieceId,
@@ -206,7 +207,7 @@ async function onRowClayChanged(idx, clayId) {
   const label = getClayLabel(clayId) || ''
 
   // Auto-save to database if pieceId is provided and row has ID
-  if (isAutoSaveMode.value && currentRow.id) {
+  if (isAutoSaveMode.value && currentRow.id && !props.isHydrating) {
     try {
       await piecesStore.updatePieceClayRow(currentRow.id, {
         clay_body_id: clayId,
@@ -226,7 +227,7 @@ async function onNotesChanged(idx, notes) {
   const currentRow = rowsValue.value[idx]
 
   // Auto-save to database if pieceId is provided and row has ID
-  if (isAutoSaveMode.value && currentRow.id) {
+  if (isAutoSaveMode.value && currentRow.id && !props.isHydrating) {
     try {
       await piecesStore.updatePieceClayRow(currentRow.id, {
         notes,
@@ -246,7 +247,7 @@ async function remove(i) {
   const rowToRemove = rowsValue.value[i]
 
   // Auto-save to database if pieceId is provided and row has ID
-  if (isAutoSaveMode.value && rowToRemove.id) {
+  if (isAutoSaveMode.value && rowToRemove.id && !props.isHydrating) {
     try {
       await piecesStore.deletePieceClayRow(rowToRemove.id)
       showAutoSaveToast('Clay removed')

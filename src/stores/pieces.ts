@@ -22,6 +22,12 @@ const PIECES = gql`
       updated_at
       visibility
 
+      # 👇 new
+      profile {
+        display_name
+        avatar_url
+      }
+
       piece_clays {
         id
         notes
@@ -57,8 +63,14 @@ const PIECES = gql`
       }
 
       piece_stage_histories(order_by: { date: asc }) {
-        id
+        weight_g
+        width_cm
         stage
+        piece_id
+        location
+        length_cm
+        id
+        height_cm
         date
       }
 
@@ -75,6 +87,7 @@ const PIECES = gql`
     }
   }
 `
+
 const PIECE_BY_ID = gql`
   query PieceById($id: Int!) {
     potterbase_piece_by_pk(id: $id) {
@@ -84,6 +97,12 @@ const PIECE_BY_ID = gql`
       visibility
       created_at
       updated_at
+
+      # 👇 new
+      profile {
+        display_name
+        avatar_url
+      }
 
       piece_clays {
         id
@@ -120,8 +139,14 @@ const PIECE_BY_ID = gql`
       }
 
       piece_stage_histories(order_by: { date: asc }) {
-        id
+        weight_g
+        width_cm
         stage
+        piece_id
+        location
+        length_cm
+        id
+        height_cm
         date
       }
 
@@ -287,6 +312,25 @@ const ADDSTAGE = gql`
       id
       stage
       date
+      length_cm
+      width_cm
+      height_cm
+      weight_g
+      location
+    }
+  }
+`
+const UPDATESTAGE = gql`
+  mutation UpdateStage($id: Int!, $changes: potterbase_piece_stage_history_set_input!) {
+    update_potterbase_piece_stage_history_by_pk(pk_columns: { id: $id }, _set: $changes) {
+      id
+      stage
+      date
+      length_cm
+      width_cm
+      height_cm
+      weight_g
+      location
     }
   }
 `
@@ -369,6 +413,7 @@ export function usePiecesStore() {
   const { mutate: deleteFiringMut } = useMutation(DELETEFIRING)
 
   const { mutate: addStageMut } = useMutation(ADDSTAGE)
+  const { mutate: updateStageMut } = useMutation(UPDATESTAGE)
   const { mutate: deleteStageMut } = useMutation(DELETESTAGE)
 
   const { mutate: addImageMut } = useMutation(ADDIMAGE)
@@ -469,6 +514,11 @@ export function usePiecesStore() {
     if (isAuthed.value) await refetch()
     return data?.insert_potterbase_piece_stage_history_one
   }
+  async function updateStage(id, changes) {
+    const { data } = await updateStageMut({ id, changes })
+    if (isAuthed.value) await refetch()
+    return data?.update_potterbase_piece_stage_history_by_pk
+  }
   async function deleteStage(id) {
     const { data } = await deleteStageMut({ id })
     if (isAuthed.value) await refetch()
@@ -519,6 +569,7 @@ export function usePiecesStore() {
     deleteFiring,
 
     addStage,
+    updateStage,
     deleteStage,
 
     addImage,

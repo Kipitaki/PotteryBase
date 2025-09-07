@@ -19,14 +19,28 @@
             :stages="STAGES"
             v-model:stageDates="form.stageDates"
             v-model:stageLocation="form.stageLocation"
+            v-model:stageDims="form.stageDims"
+            :is-hydrating="isHydrating"
           />
         </div>
 
         <!-- RIGHT: Clay / Glaze / Firing / Notes -->
         <div class="col-12 col-md-8">
-          <clay-picker v-model="form.clays" :piece-id="currentPieceId" />
-          <glaze-rows-editor v-model="form.glazes" :piece-id="currentPieceId" />
-          <firing-rows-editor v-model="form.firings" :piece-id="currentPieceId" />
+          <clay-picker
+            v-model="form.clays"
+            :piece-id="currentPieceId"
+            :is-hydrating="isHydrating"
+          />
+          <glaze-rows-editor
+            v-model="form.glazes"
+            :piece-id="currentPieceId"
+            :is-hydrating="isHydrating"
+          />
+          <firing-rows-editor
+            v-model="form.firings"
+            :piece-id="currentPieceId"
+            :is-hydrating="isHydrating"
+          />
 
           <section-card>
             <template #title>Notes</template>
@@ -79,10 +93,12 @@ import FiringRowsEditor from 'src/components/FiringRowsEditor.vue'
 import SectionCard from 'src/components/SectionCard.vue'
 import { useNameGeneratorStore } from 'src/stores/nameGenerator'
 import { usePiecesStore } from 'src/stores/pieces'
+import { useProfileStore } from 'src/stores/profile'
 import { nhost } from 'boot/nhost'
 
 const piecesStore = usePiecesStore()
 const nameGen = useNameGeneratorStore()
+const profileStore = useProfileStore()
 const $q = useQuasar()
 
 /* ---------- Stages ---------- */
@@ -147,6 +163,8 @@ const form = reactive({
   photos: [],
   stageLocation: '',
   stageDates: { ...emptyStageDates(), lump: todayISO() },
+  stageDims: {}, // Dimensions for each stage
+  stageIds: {}, // Stage IDs for updates
   clays: [],
   glazes: [],
   firings: [],
@@ -172,36 +190,89 @@ function hydrateForm(piece) {
       id: g.id,
       glazeId: g.glaze?.id,
       notes: g.notes || '',
-      layer: g.layer_number,
+      layer_number: g.layer_number,
+      application_method: g.application_method || '',
     })) || []
 
-  form.firings = piece.piece_firings || []
+  form.firings =
+    piece.piece_firings?.map((f) => ({
+      id: f.id,
+      cone: f.cone,
+      tempF: f.temperature_f,
+      kilnType: f.kiln_type,
+      kilnLocation: f.kiln_location,
+      name: f.load_name,
+      date: f.date,
+      notes: f.notes || '',
+    })) || []
 
   form.photos = piece.piece_images || []
 
   form.stageDates =
     piece.piece_stage_histories?.reduce((acc, sh) => {
-      acc[sh.stage] = sh.date
+      // Convert ISO date to yyyy-MM-dd format for HTML date input
+      acc[sh.stage] = sh.date ? new Date(sh.date).toISOString().split('T')[0] : ''
       return acc
     }, emptyStageDates()) || emptyStageDates()
+
+  // Load dimensions and IDs from stage histories
+  form.stageDims =
+    piece.piece_stage_histories?.reduce((acc, sh) => {
+      acc[sh.stage] = {
+        length: sh.length_cm
+          ? profileStore.isMetric
+            ? sh.length_cm.toFixed(1)
+            : (sh.length_cm / 2.54).toFixed(1)
+          : '',
+        width: sh.width_cm
+          ? profileStore.isMetric
+            ? sh.width_cm.toFixed(1)
+            : (sh.width_cm / 2.54).toFixed(1)
+          : '',
+        height: sh.height_cm
+          ? profileStore.isMetric
+            ? sh.height_cm.toFixed(1)
+            : (sh.height_cm / 2.54).toFixed(1)
+          : '',
+        weight: sh.weight_g
+          ? profileStore.isMetric
+            ? sh.weight_g.toFixed(1)
+            : (sh.weight_g / 453.592).toFixed(1)
+          : '',
+        location: sh.location || '',
+      }
+      return acc
+    }, {}) || {}
+
+  // Store stage IDs for updates
+  form.stageIds =
+    piece.piece_stage_histories?.reduce((acc, sh) => {
+      acc[sh.stage] = sh.id
+      return acc
+    }, {}) || {}
 }
 
 /* ---------- Load existing if editing ---------- */
 onMounted(async () => {
   if (isEdit.value && editId.value) {
+    isHydrating.value = true
     const piece = await piecesStore.getPieceById(editId.value)
     if (piece) hydrateForm(piece)
+    isHydrating.value = false
   }
   resetDirtyBaseline()
 })
 
 /* ---------- Auto-save watchers ---------- */
+// Flag to prevent auto-save during initial hydration
+const isHydrating = ref(false)
+
 // Auto-save title changes (with debounce)
 let titleDebounce = null
 watch(
   () => form.title,
   (newTitle, oldTitle) => {
-    if (!isEdit.value || !currentPieceId.value) return
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
     if (newTitle === oldTitle) return
 
     clearTimeout(titleDebounce)
@@ -216,7 +287,7 @@ let notesDebounce = null
 watch(
   () => form.notes,
   (newNotes, oldNotes) => {
-    if (!isEdit.value || !currentPieceId.value) return
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
     if (newNotes === oldNotes) return
 
     clearTimeout(notesDebounce)
@@ -230,7 +301,7 @@ watch(
 watch(
   () => form.share,
   (newShare, oldShare) => {
-    if (!isEdit.value || !currentPieceId.value) return
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
     if (newShare === oldShare) return
 
     autoSavePiece({ visibility: newShare })
@@ -241,7 +312,7 @@ watch(
 watch(
   () => form.stageDates,
   async (newStageDates, oldStageDates) => {
-    if (!isEdit.value || !currentPieceId.value) return
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
     if (!oldStageDates) return // Skip initial hydration
 
     // Find which stage was changed
@@ -251,16 +322,162 @@ watch(
 
       if (newDate !== oldDate && newDate) {
         try {
-          await piecesStore.addStage({
-            piece_id: currentPieceId.value,
-            stage: stage,
-            date: newDate,
-          })
+          const stageId = form.stageIds[stage]
+          const dims = form.stageDims[stage] || {}
+
+          if (stageId) {
+            // Update existing stage
+            await piecesStore.updateStage(stageId, {
+              date: newDate,
+              length_cm: dims.length
+                ? profileStore.isMetric
+                  ? parseFloat(dims.length)
+                  : parseFloat(dims.length) * 2.54
+                : null,
+              width_cm: dims.width
+                ? profileStore.isMetric
+                  ? parseFloat(dims.width)
+                  : parseFloat(dims.width) * 2.54
+                : null,
+              height_cm: dims.height
+                ? profileStore.isMetric
+                  ? parseFloat(dims.height)
+                  : parseFloat(dims.height) * 2.54
+                : null,
+              weight_g: dims.weight
+                ? profileStore.isMetric
+                  ? parseFloat(dims.weight)
+                  : parseFloat(dims.weight) * 453.592
+                : null,
+              location: dims.location || null,
+            })
+          } else {
+            // Create new stage
+            await piecesStore.addStage({
+              piece_id: currentPieceId.value,
+              stage: stage,
+              date: newDate,
+              length_cm: dims.length
+                ? profileStore.isMetric
+                  ? parseFloat(dims.length)
+                  : parseFloat(dims.length) * 2.54
+                : null,
+              width_cm: dims.width
+                ? profileStore.isMetric
+                  ? parseFloat(dims.width)
+                  : parseFloat(dims.width) * 2.54
+                : null,
+              height_cm: dims.height
+                ? profileStore.isMetric
+                  ? parseFloat(dims.height)
+                  : parseFloat(dims.height) * 2.54
+                : null,
+              weight_g: dims.weight
+                ? profileStore.isMetric
+                  ? parseFloat(dims.weight)
+                  : parseFloat(dims.weight) * 453.592
+                : null,
+              location: dims.location || null,
+            })
+          }
           showAutoSaveToast(`${stageLabelMap[stage]} stage saved`)
         } catch (error) {
           console.error('[AddPiece] Failed to save stage:', error)
           $q.notify({
             message: 'Failed to save stage',
+            type: 'negative',
+            timeout: 2000,
+            position: 'top',
+          })
+        }
+      }
+    }
+  },
+  { deep: true },
+)
+
+// Auto-save dimension changes
+watch(
+  () => form.stageDims,
+  async (newStageDims, oldStageDims) => {
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
+    if (!oldStageDims) return // Skip initial hydration
+
+    // Find which stage dimensions were changed
+    for (const stage of stageOrder) {
+      const newDims = newStageDims[stage] || {}
+      const oldDims = oldStageDims[stage] || {}
+
+      // Check if any dimension changed
+      const hasChanges =
+        newDims.length !== oldDims.length ||
+        newDims.width !== oldDims.width ||
+        newDims.height !== oldDims.height ||
+        newDims.weight !== oldDims.weight ||
+        newDims.location !== oldDims.location
+
+      if (hasChanges && form.stageDates[stage]) {
+        try {
+          const stageId = form.stageIds[stage]
+          if (stageId) {
+            // Update existing stage
+            await piecesStore.updateStage(stageId, {
+              length_cm: newDims.length
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.length)
+                  : parseFloat(newDims.length) * 2.54
+                : null,
+              width_cm: newDims.width
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.width)
+                  : parseFloat(newDims.width) * 2.54
+                : null,
+              height_cm: newDims.height
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.height)
+                  : parseFloat(newDims.height) * 2.54
+                : null,
+              weight_g: newDims.weight
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.weight)
+                  : parseFloat(newDims.weight) * 453.592
+                : null,
+              location: newDims.location || null,
+            })
+          } else {
+            // Create new stage (shouldn't happen in edit mode, but fallback)
+            await piecesStore.addStage({
+              piece_id: currentPieceId.value,
+              stage: stage,
+              date: form.stageDates[stage],
+              length_cm: newDims.length
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.length)
+                  : parseFloat(newDims.length) * 2.54
+                : null,
+              width_cm: newDims.width
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.width)
+                  : parseFloat(newDims.width) * 2.54
+                : null,
+              height_cm: newDims.height
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.height)
+                  : parseFloat(newDims.height) * 2.54
+                : null,
+              weight_g: newDims.weight
+                ? profileStore.isMetric
+                  ? parseFloat(newDims.weight)
+                  : parseFloat(newDims.weight) * 453.592
+                : null,
+              location: newDims.location || null,
+            })
+          }
+          showAutoSaveToast(`${stageLabelMap[stage]} dimensions saved`)
+        } catch (error) {
+          console.error('[AddPiece] Failed to save dimensions:', error)
+          $q.notify({
+            message: 'Failed to save dimensions',
             type: 'negative',
             timeout: 2000,
             position: 'top',
@@ -329,10 +546,32 @@ async function onSave() {
 
     // Add initial stage if set
     if (latestStage.value) {
+      const dims = form.stageDims[latestStage.value.key] || {}
       await piecesStore.addStage({
         piece_id: pieceId,
         stage: latestStage.value.key,
         date: latestStage.value.date,
+        length_cm: dims.length
+          ? profileStore.isMetric
+            ? parseFloat(dims.length)
+            : parseFloat(dims.length) * 2.54
+          : null,
+        width_cm: dims.width
+          ? profileStore.isMetric
+            ? parseFloat(dims.width)
+            : parseFloat(dims.width) * 2.54
+          : null,
+        height_cm: dims.height
+          ? profileStore.isMetric
+            ? parseFloat(dims.height)
+            : parseFloat(dims.height) * 2.54
+          : null,
+        weight_g: dims.weight
+          ? profileStore.isMetric
+            ? parseFloat(dims.weight)
+            : parseFloat(dims.weight) * 453.592
+          : null,
+        location: dims.location || null,
       })
     }
 
@@ -340,10 +579,32 @@ async function onSave() {
     for (const stage of stageOrder) {
       const date = form.stageDates[stage]
       if (date && stage !== latestStage.value?.key) {
+        const dims = form.stageDims[stage] || {}
         await piecesStore.addStage({
           piece_id: pieceId,
           stage: stage,
           date: date,
+          length_cm: dims.length
+            ? profileStore.isMetric
+              ? parseFloat(dims.length)
+              : parseFloat(dims.length) * 2.54
+            : null,
+          width_cm: dims.width
+            ? profileStore.isMetric
+              ? parseFloat(dims.width)
+              : parseFloat(dims.width) * 2.54
+            : null,
+          height_cm: dims.height
+            ? profileStore.isMetric
+              ? parseFloat(dims.height)
+              : parseFloat(dims.height) * 2.54
+            : null,
+          weight_g: dims.weight
+            ? profileStore.isMetric
+              ? parseFloat(dims.weight)
+              : parseFloat(dims.weight) * 453.592
+            : null,
+          location: dims.location || null,
         })
       }
     }
@@ -365,7 +626,8 @@ async function onSave() {
         await piecesStore.addGlazeToPiece({
           piece_id: pieceId,
           glaze_id: glaze.glazeId,
-          layer_number: glaze.layer || 1,
+          layer_number: glaze.layer_number || 1,
+          application_method: glaze.application_method || null,
           notes: glaze.notes || null,
         })
       }
@@ -377,8 +639,11 @@ async function onSave() {
         await piecesStore.addFiring({
           piece_id: pieceId,
           cone: firing.cone,
-          temperature_f: firing.temperature || null,
-          kiln_type: firing.atmosphere || null,
+          temperature_f: firing.tempF || null,
+          kiln_type: firing.kilnType || null,
+          kiln_location: firing.kilnLocation || null,
+          load_name: firing.name || null,
+          date: firing.date || null,
           notes: firing.notes || null,
         })
       }

@@ -13,14 +13,14 @@
             </div>
 
             <!-- Profile content -->
-            <div v-else-if="user">
+            <div v-else-if="profile">
               <!-- Profile header -->
               <div class="text-center q-mb-lg">
                 <q-avatar size="100px" color="primary" class="q-mb-md">
                   <q-icon name="account_circle" size="60px" />
                 </q-avatar>
-                <div class="text-h6">{{ user.displayName || 'User' }}</div>
-                <div class="text-caption text-grey">{{ user.email }}</div>
+                <div class="text-h6">{{ profile.display_name || 'User' }}</div>
+                <div class="text-caption text-grey">{{ user?.email }}</div>
               </div>
 
               <!-- Profile information -->
@@ -31,17 +31,31 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Email</q-item-label>
-                    <q-item-label caption>{{ user.email }}</q-item-label>
+                    <q-item-label caption>{{ user?.email }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
-                <q-item v-if="user.displayName">
+                <q-item>
                   <q-item-section avatar>
                     <q-icon name="person" />
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Display Name</q-item-label>
-                    <q-item-label caption>{{ user.displayName }}</q-item-label>
+                    <q-item-label caption>{{ profile.display_name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+
+                <q-item>
+                  <q-item-section avatar>
+                    <q-icon name="straighten" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>Unit Preference</q-item-label>
+                    <q-item-label caption>
+                      {{
+                        profile.unit_preference === 'metric' ? 'Metric (cm/g)' : 'Imperial (in/lb)'
+                      }}
+                    </q-item-label>
                   </q-item-section>
                 </q-item>
 
@@ -51,11 +65,11 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>Member Since</q-item-label>
-                    <q-item-label caption>{{ formatDate(user.createdAt) }}</q-item-label>
+                    <q-item-label caption>{{ formatDate(user?.createdAt) }}</q-item-label>
                   </q-item-section>
                 </q-item>
 
-                <q-item v-if="user.lastSignInAt">
+                <q-item v-if="user?.lastSignInAt">
                   <q-item-section avatar>
                     <q-icon name="access_time" />
                   </q-item-section>
@@ -91,7 +105,7 @@
             <div v-else class="text-center q-pa-lg">
               <q-icon name="error" color="negative" size="3em" class="q-mb-md" />
               <p>Unable to load profile information.</p>
-              <q-btn color="primary" label="Try Again" @click="loadProfile" />
+              <q-btn color="primary" label="Try Again" @click="refetch" />
             </div>
           </q-card-section>
         </q-card>
@@ -106,7 +120,20 @@
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="editForm.displayName" label="Display Name" filled class="q-mb-md" />
+          <q-input v-model="editForm.display_name" label="Display Name" filled class="q-mb-md" />
+
+          <q-select
+            v-model="editForm.unit_preference"
+            :options="[
+              { label: 'Imperial (inches)', value: 'imperial' },
+              { label: 'Metric (cm)', value: 'metric' },
+            ]"
+            label="Unit Preference"
+            emit-value
+            map-options
+            filled
+            class="q-mb-md"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -162,23 +189,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useUserData } from '@nhost/vue'
 import { nhost } from 'boot/nhost'
 import { useQuasar } from 'quasar'
+import { useProfileStore } from 'src/stores/profile'
 
 const $q = useQuasar()
 const user = useUserData()
 
+// Profile store
+const profileStore = useProfileStore()
+const { profile, loading, refetch, updateProfile } = profileStore
+
 // Reactive data
-const loading = ref(false)
 const saving = ref(false)
 const changingPassword = ref(false)
 const showEditDialog = ref(false)
 const showPasswordDialog = ref(false)
 
 const editForm = ref({
-  displayName: '',
+  display_name: '',
+  unit_preference: 'imperial',
 })
 
 const passwordForm = ref({
@@ -197,47 +229,27 @@ function formatDate(dateString) {
   })
 }
 
-async function loadProfile() {
-  loading.value = true
-  try {
-    // The user data should already be loaded by Nhost
-    if (user.value) {
-      editForm.value.displayName = user.value.displayName || ''
-    }
-  } catch (error) {
-    console.error('Error loading profile:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to load profile information',
-    })
-  } finally {
-    loading.value = false
+onMounted(() => {
+  if (profile.value) {
+    editForm.value.display_name = profile.value.display_name || ''
+    editForm.value.unit_preference = profile.value.unit_preference || 'imperial'
   }
-}
+})
 
 async function saveProfile() {
-  if (!editForm.value.displayName.trim()) {
-    $q.notify({
-      type: 'warning',
-      message: 'Display name cannot be empty',
-    })
+  if (!editForm.value.display_name.trim()) {
+    $q.notify({ type: 'warning', message: 'Display name cannot be empty' })
     return
   }
 
   saving.value = true
   try {
-    const { error } = await nhost.auth.updateUser({
-      displayName: editForm.value.displayName,
+    await updateProfile({
+      display_name: editForm.value.display_name.trim(),
+      unit_preference: editForm.value.unit_preference === 'metric' ? 'metric' : 'imperial',
     })
 
-    if (error) {
-      throw error
-    }
-
-    $q.notify({
-      type: 'positive',
-      message: 'Profile updated successfully',
-    })
+    $q.notify({ type: 'positive', message: 'Profile updated successfully' })
     showEditDialog.value = false
   } catch (error) {
     console.error('Error updating profile:', error)
@@ -252,26 +264,17 @@ async function saveProfile() {
 
 async function changePassword() {
   if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword) {
-    $q.notify({
-      type: 'warning',
-      message: 'Please fill in all password fields',
-    })
+    $q.notify({ type: 'warning', message: 'Please fill in all password fields' })
     return
   }
 
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    $q.notify({
-      type: 'warning',
-      message: 'New passwords do not match',
-    })
+    $q.notify({ type: 'warning', message: 'New passwords do not match' })
     return
   }
 
   if (passwordForm.value.newPassword.length < 6) {
-    $q.notify({
-      type: 'warning',
-      message: 'Password must be at least 6 characters long',
-    })
+    $q.notify({ type: 'warning', message: 'Password must be at least 6 characters long' })
     return
   }
 
@@ -280,21 +283,11 @@ async function changePassword() {
     const { error } = await nhost.auth.changePassword({
       newPassword: passwordForm.value.newPassword,
     })
+    if (error) throw error
 
-    if (error) {
-      throw error
-    }
-
-    $q.notify({
-      type: 'positive',
-      message: 'Password changed successfully',
-    })
+    $q.notify({ type: 'positive', message: 'Password changed successfully' })
     showPasswordDialog.value = false
-    passwordForm.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    }
+    passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
   } catch (error) {
     console.error('Error changing password:', error)
     $q.notify({
@@ -306,8 +299,7 @@ async function changePassword() {
   }
 }
 
-// Lifecycle
-onMounted(() => {
-  loadProfile()
+watch(profile, (val) => {
+  console.log('[Profile Store] profile →', val)
 })
 </script>

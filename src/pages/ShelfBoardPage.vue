@@ -1,14 +1,13 @@
 <template>
   <q-page padding>
     <!-- Top Navigation -->
-
     <div class="row items-center justify-between q-mb-md">
-      <div class="text-h5">Shelf (Kanban)</div>
+      <div class="text-h5">My Shelf (Kanban)</div>
       <div class="text-caption text-grey-7">Drag cards between rows to update stage</div>
     </div>
 
     <!-- Debug -->
-    <pre>Pieces: {{ safePieces.length }}</pre>
+    <pre>My Pieces: {{ safePieces.length }}</pre>
 
     <!-- Lanes -->
     <div v-for="lane in lanes" :key="lane.key" class="q-mb-lg">
@@ -45,6 +44,7 @@ import draggable from 'vuedraggable'
 import { reactive, onMounted, watch, computed } from 'vue'
 import { usePiecesStore } from 'src/stores/pieces'
 import ShelfPieceCard from 'src/components/ShelfPieceCard.vue'
+import { nhost } from 'boot/nhost'
 
 /* ---------- Stage definitions ---------- */
 const STAGES = [
@@ -62,7 +62,13 @@ const stageLabelMap = Object.fromEntries(STAGES.map((s) => [s.value, s.label]))
 
 /* ---------- Store ---------- */
 const piecesStore = usePiecesStore()
-const safePieces = computed(() => piecesStore.all?.value ?? [])
+const currentUserId = nhost.auth.getUser()?.id || null
+
+// Only show the logged-in user's pieces
+const safePieces = computed(() => {
+  const all = piecesStore.all?.value ?? []
+  return all.filter((p) => p.owner_id === currentUserId)
+})
 
 /* ---------- Reactive lanes ---------- */
 const lanes = reactive([])
@@ -144,8 +150,8 @@ function latestLabel(p) {
 <style scoped>
 .lane-cards {
   display: flex;
-  flex-wrap: wrap; /* wrap to next row if needed */
-  gap: 8px; /* spacing between cards */
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: flex-start;
 }
 </style>
