@@ -9,22 +9,32 @@ provideApolloClient(apolloClient)
 const GLAZES = gql`
   query Glazes {
     potterbase_glaze(order_by: { name: asc }) {
-      id
-      name
       brand
-      cone
+      code
       color
+      cone
+      display_name
+      finish
+      name
+      notes
+      id
+      series
     }
   }
 `
 const RECENT_GLAZES = gql`
   query RecentGlazes {
     potterbase_glaze(order_by: { id: desc }, limit: 5) {
-      id
-      name
       brand
-      cone
+      code
       color
+      cone
+      display_name
+      finish
+      name
+      notes
+      id
+      series
     }
   }
 `
@@ -33,12 +43,16 @@ const RECENT_GLAZES = gql`
 const CREATE_GLAZE = gql`
   mutation CreateGlaze($object: potterbase_glaze_insert_input!) {
     insert_potterbase_glaze_one(object: $object) {
-      id
-      name
       brand
-      cone
+      code
       color
-      updated_at
+      cone
+      display_name
+      finish
+      name
+      notes
+      id
+      series
     }
   }
 `

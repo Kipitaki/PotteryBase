@@ -11,54 +11,79 @@
 
     <q-list bordered separator class="rounded-borders">
       <q-item v-for="s in stages" :key="s.value" class="stage-row">
-        <!-- Checkbox -->
-        <q-item-section avatar>
+        <!-- Checkbox or Pill -->
+        <q-item-section avatar style="min-width: 60px">
           <q-checkbox
-            :model-value="Boolean(stageDates[s.value])"
+            v-if="!stageDates[s.value]"
+            :model-value="false"
             color="primary"
             @update:model-value="(val) => onToggle(s.value, val)"
           />
+          <q-chip
+            v-else
+            color="primary"
+            text-color="white"
+            size="md"
+            clickable
+            @click="onToggle(s.value, false)"
+          >
+            {{ s.label }}
+          </q-chip>
         </q-item-section>
 
-        <!-- Label + condensed dims -->
-        <q-item-section>
-          <q-item-label>{{ s.label }}</q-item-label>
+        <!-- Label + dimensions -->
+        <q-item-section style="flex: 1">
+          <q-item-label v-if="!stageDates[s.value]">{{ s.label }}</q-item-label>
           <q-item-label caption>
-            <span v-if="stageDims[s.value]">
-              📏
-              {{ profileStore.toLengthDisplay(stageDims[s.value].length) }} ×
-              {{ profileStore.toLengthDisplay(stageDims[s.value].width) }} ×
-              {{ profileStore.toLengthDisplay(stageDims[s.value].height) }}
-              <span v-if="stageDims[s.value].weight">
-                • ⚖️ {{ profileStore.toWeightDisplay(stageDims[s.value].weight) }}
-              </span>
-              <span v-if="stageDims[s.value].location">
-                • 📍 {{ stageDims[s.value].location }}
-              </span>
-            </span>
-            <span v-else>No dimensions set</span>
+            <div
+              v-if="stageDims[s.value]"
+              class="dimensions-display"
+              @click="openDimsForm(s.value)"
+            >
+              <div>
+                📏 {{ profileStore.toLengthDisplay(stageDims[s.value].length) }}×{{
+                  profileStore.toLengthDisplay(stageDims[s.value].width)
+                }}×{{ profileStore.toLengthDisplay(stageDims[s.value].height) }}
+              </div>
+              <div v-if="stageDims[s.value].weight">
+                ⚖️ {{ profileStore.toWeightDisplay(stageDims[s.value].weight) }}
+              </div>
+            </div>
+            <q-btn
+              v-else
+              flat
+              size="sm"
+              dense
+              color="primary"
+              label="Enter Dimensions"
+              @click="openDimsForm(s.value)"
+            />
           </q-item-label>
         </q-item-section>
 
-        <!-- Date + Edit Dims -->
-        <q-item-section side style="min-width: 220px">
-          <div class="row items-center no-wrap q-gutter-sm">
+        <!-- Date + Location -->
+        <q-item-section side style="min-width: 120px">
+          <div class="column">
+            <span
+              v-if="stageDates[s.value] && editingDate !== s.value"
+              class="date-display"
+              @click="startEditingDate(s.value)"
+            >
+              {{ formatDate(stageDates[s.value]) }}
+            </span>
             <q-input
+              v-else
               :model-value="stageDates[s.value]"
               type="date"
               dense
               hide-bottom-space
               style="width: 130px"
               @update:model-value="(val) => onDateChange(s.value, val)"
+              @blur="stopEditingDate"
             />
-            <q-btn
-              flat
-              size="sm"
-              dense
-              color="primary"
-              label="Dimensions"
-              @click="openDimsForm(s.value)"
-            />
+            <div v-if="stageDims[s.value]?.location" class="text-caption text-grey-6 q-mt-xs">
+              📍 {{ stageDims[s.value].location }}
+            </div>
           </div>
         </q-item-section>
       </q-item>
@@ -136,6 +161,7 @@ const props = defineProps({
 const emit = defineEmits(['update:stageDates', 'update:stageDims'])
 
 const profileStore = useProfileStore()
+const editingDate = ref(null)
 
 const unitDisplay = computed(() =>
   profileStore.isMetric.value ? 'Metric (cm/g)' : 'Imperial (in/lb)',
@@ -155,6 +181,19 @@ function onDateChange(key, val) {
   const next = { ...props.stageDates }
   next[key] = val || ''
   emit('update:stageDates', next)
+}
+
+function formatDate(dateString) {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleDateString()
+}
+
+function startEditingDate(stage) {
+  editingDate.value = stage
+}
+
+function stopEditingDate() {
+  editingDate.value = null
 }
 
 const dimsDialog = ref({
@@ -197,5 +236,20 @@ function saveDims() {
 }
 .stage-row {
   align-items: center;
+}
+.dimensions-display {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.dimensions-display:hover {
+  opacity: 0.7;
+}
+.date-display {
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+}
+.date-display:hover {
+  opacity: 0.7;
 }
 </style>

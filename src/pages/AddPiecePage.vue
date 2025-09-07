@@ -7,7 +7,21 @@
         v-model:share="form.share"
         :latest="latestStage"
         :stage-label-map="stageLabelMap"
+        class="q-mb-xs"
       />
+
+      <!-- Notes -->
+      <div class="row q-col-gutter-md items-start q-mb-xs">
+        <div class="col-12 col-md-10">
+          <q-input
+            v-model="form.notes"
+            label="Notes"
+            dense
+            hide-bottom-space
+            placeholder="Add notes about this piece..."
+          />
+        </div>
+      </div>
 
       <!-- Photos -->
       <photo-gallery-editor v-model="form.photos" class="q-mb-md" />
@@ -41,17 +55,6 @@
             :piece-id="currentPieceId"
             :is-hydrating="isHydrating"
           />
-
-          <section-card>
-            <template #title>Notes</template>
-            <q-input
-              v-model="form.notes"
-              type="textarea"
-              autogrow
-              dense
-              placeholder="Anything else to remember"
-            />
-          </section-card>
         </div>
       </div>
 
@@ -90,7 +93,7 @@ import StageChecklist from 'src/components/StageChecklist.vue'
 import ClayPicker from 'src/components/ClayPicker.vue'
 import GlazeRowsEditor from 'src/components/GlazeRowsEditor.vue'
 import FiringRowsEditor from 'src/components/FiringRowsEditor.vue'
-import SectionCard from 'src/components/SectionCard.vue'
+//import SectionCard from 'src/components/SectionCard.vue'
 import { useNameGeneratorStore } from 'src/stores/nameGenerator'
 import { usePiecesStore } from 'src/stores/pieces'
 import { useProfileStore } from 'src/stores/profile'

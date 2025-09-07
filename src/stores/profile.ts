@@ -112,7 +112,8 @@ export function useProfileStore() {
     if (val == null || val === '') return null
     const value = parseFloat(val)
     if (isNaN(value)) return null
-    return isMetric.value ? value : value * 2.54 // always cm
+    const cm = isMetric.value ? value : value * 2.54
+    return Math.round(cm * 100) / 100 // round to 2 decimal places
   }
 
   function fromWeightInput(val) {
@@ -127,7 +128,7 @@ export function useProfileStore() {
     if (cm == null || cm === '') return ''
     const value = parseFloat(cm)
     if (isNaN(value)) return ''
-    return isMetric.value ? value : (value / 2.54).toFixed(2)
+    return isMetric.value ? value : Math.round((value / 2.54) * 100) / 100
   }
 
   function toWeightInput(g) {

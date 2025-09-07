@@ -88,7 +88,7 @@
                   color="primary"
                   label="Edit Profile"
                   icon="edit"
-                  @click="showEditDialog = true"
+                  @click="openEditDialog"
                   class="q-mr-md"
                 />
                 <q-btn
@@ -235,6 +235,14 @@ onMounted(() => {
     editForm.value.unit_preference = profile.value.unit_preference || 'imperial'
   }
 })
+
+function openEditDialog() {
+  if (profile.value) {
+    editForm.value.display_name = profile.value.display_name || ''
+    editForm.value.unit_preference = profile.value.unit_preference || 'imperial'
+  }
+  showEditDialog.value = true
+}
 
 async function saveProfile() {
   if (!editForm.value.display_name.trim()) {

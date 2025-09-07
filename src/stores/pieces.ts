@@ -125,6 +125,7 @@ const PIECE_BY_ID = gql`
           brand
           cone
           color
+          code
         }
       }
 
@@ -380,14 +381,14 @@ export function usePiecesStore() {
 
   const { result, loading, error, refetch } = useQuery(PIECES, null, {
     fetchPolicy: 'network-only',
-    enabled: isAuthed,
   })
 
-  watch(result, (val) => {
-    if (val?.potterbase_piece) {
-      // console.log('[Apollo Raw Result]', val.potterbase_piece)
-    }
-  })
+  // watch(result, (val) => {
+  //   //console.log('result', val)
+  //   if (val?.potterbase_piece) {
+  //     console.log('[Apollo Raw Result]', val.potterbase_piece)
+  //   }
+  // })
   watch(error, (err) => {
     if (err) console.error('[Apollo Error]', err)
   })
@@ -421,7 +422,7 @@ export function usePiecesStore() {
   const { mutate: deleteImageMut } = useMutation(DELETEIMAGE)
 
   // Computed
-  const all = computed(() => result.value?.potterbase_piece ?? [])
+  const all = computed(() => result.value?.potterbase_piece || [])
   const allArray = computed(() => all.value)
 
   /* ------------ Actions ------------ */

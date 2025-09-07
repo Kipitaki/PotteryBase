@@ -1,5 +1,5 @@
 <template>
-  <q-card class="piece-card" flat bordered>
+  <q-card class="piece-card" flat bordered v-bind="$attrs">
     <!-- ---------------- Image Area ---------------- -->
     <div
       class="img-wrap"
@@ -9,7 +9,12 @@
       :class="{ dragover: isDragOver }"
     >
       <!-- Main photo -->
-      <q-img :src="mainPhotoUrl" ratio="1" class="card-thumb" />
+      <q-img
+        :src="mainPhotoUrl"
+        ratio="1"
+        class="card-thumb cursor-pointer"
+        @click="openImageDialog(mainPhotoUrl)"
+      />
 
       <!-- Stage chip -->
       <q-chip
@@ -99,13 +104,14 @@
         :src="photo.url"
         ratio="1"
         class="thumb-img cursor-pointer"
-        @click="selectThumbnail(photo.id)"
+        @click="selectThumbnailAndOpenDialog(photo.id, photo.url)"
       />
     </div>
 
     <!-- ---------------- Title ---------------- -->
     <q-card-section class="tight">
       <div class="text-subtitle1 ellipsis">{{ piece?.title || 'Untitled' }}</div>
+      <div v-if="subtitle" class="text-caption text-grey-6 ellipsis">{{ subtitle }}</div>
     </q-card-section>
 
     <!-- ---------------- Clays ---------------- -->
@@ -156,6 +162,23 @@
       </div>
     </q-card-section>
   </q-card>
+
+  <!-- Image Dialog -->
+  <q-dialog v-model="imageDialog.open" maximized>
+    <q-card>
+      <q-card-section class="row items-center q-pb-none">
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </q-card-section>
+      <q-card-section class="flex flex-center">
+        <q-img
+          :src="imageDialog.url"
+          style="max-width: 90vw; max-height: 80vh; object-fit: contain"
+          fit="contain"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -169,6 +192,12 @@ const piecesStore = usePiecesStore()
 
 const props = defineProps({
   piece: { type: Object, required: true },
+  subtitle: { type: String, default: '' },
+})
+
+// Manually handle draggable attributes
+defineOptions({
+  inheritAttrs: false,
 })
 
 /* ---------- Auth + Ownership ---------- */
@@ -185,6 +214,12 @@ const currentPhotoId = ref(null)
 const fileInput = ref(null)
 const isDragOver = ref(false)
 
+// Image dialog
+const imageDialog = ref({
+  open: false,
+  url: '',
+})
+
 onMounted(() => {
   photos.value = props.piece?.piece_images || []
 })
@@ -198,6 +233,16 @@ const mainPhotoUrl = computed(() => {
 
 function selectThumbnail(id) {
   currentPhotoId.value = id
+}
+
+function selectThumbnailAndOpenDialog(id, url) {
+  selectThumbnail(id)
+  openImageDialog(url)
+}
+
+function openImageDialog(url) {
+  imageDialog.value.url = url
+  imageDialog.value.open = true
 }
 function triggerFileInput() {
   fileInput.value?.click()

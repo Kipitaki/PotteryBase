@@ -41,7 +41,8 @@
             color="secondary"
             icon="palette"
             label="Browse glazes"
-            @click="onBrowseGlazes"
+            disable
+            class="future-feature"
           />
           <q-btn
             outline
@@ -49,7 +50,8 @@
             text-color="white"
             icon="photo_library"
             label="Explore gallery"
-            @click="onExploreGallery"
+            disable
+            class="future-feature"
           />
           <q-btn
             outline
@@ -63,39 +65,41 @@
       </q-card>
 
       <!-- Your Pieces -->
-      <div class="row items-center q-mb-md">
-        <div class="text-h6 text-weight-bold col">Your pieces</div>
-        <q-btn
-          flat
-          dense
-          icon="view_kanban"
-          label="Go to Shelf"
-          @click="router.push({ name: 'shelf' })"
-        />
-      </div>
+      <template v-if="isAuth">
+        <div class="row items-center q-mb-md">
+          <div class="text-h6 text-weight-bold col">Your pieces</div>
+          <q-btn
+            flat
+            dense
+            icon="view_kanban"
+            label="Go to Shelf"
+            @click="router.push({ name: 'shelf' })"
+          />
+        </div>
 
-      <div class="row q-col-gutter-md q-mb-xl">
-        <template v-if="!userPieces.length && loading">
-          <q-spinner size="30px" color="primary" class="q-ma-md" />
-        </template>
-
-        <template v-else-if="userPieces.length">
-          <template v-for="p in userPieces" :key="p.id">
-            <shelf-piece-card
-              v-if="p?.id"
-              :piece="p"
-              :subtitle="''"
-              class="col-12 col-sm-6 col-md-3 col-lg-2"
-            />
+        <div class="row q-col-gutter-md q-mb-xl">
+          <template v-if="!userPieces.length && loading">
+            <q-spinner size="30px" color="primary" class="q-ma-md" />
           </template>
-        </template>
 
-        <template v-else>
-          <div class="col-12 text-center text-grey q-mt-md">
-            No pieces yet. Click <b>Add piece</b> to get started!
-          </div>
-        </template>
-      </div>
+          <template v-else-if="userPieces.length">
+            <template v-for="p in userPieces" :key="p.id">
+              <shelf-piece-card
+                v-if="p?.id"
+                :piece="p"
+                :subtitle="''"
+                class="col-12 col-sm-6 col-md-3 col-lg-2"
+              />
+            </template>
+          </template>
+
+          <template v-else>
+            <div class="col-12 text-center text-grey q-mt-md">
+              No pieces yet. Click <b>Add piece</b> to get started!
+            </div>
+          </template>
+        </div>
+      </template>
 
       <!-- Community Pieces -->
       <div class="row items-center q-mb-md">
@@ -128,7 +132,7 @@
       <!-- Stats + Activity -->
       <div class="row q-col-gutter-lg q-mt-xl">
         <div class="col-12 col-md-4">
-          <q-card bordered class="rounded-borders shadow-2">
+          <q-card bordered class="rounded-borders shadow-2 future-feature-card">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold q-mb-xs">Your week</div>
               <div class="text-caption text-grey-7 q-mb-md">Formed, trimmed, glazed, and fired</div>
@@ -155,7 +159,7 @@
         </div>
 
         <div class="col-12 col-md-8">
-          <q-card bordered class="rounded-borders shadow-2">
+          <q-card bordered class="rounded-borders shadow-2 future-feature-card">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold q-mb-xs">Recent activity</div>
               <div class="text-caption text-grey-7 q-mb-md">Populated from fixtures and store</div>
@@ -230,8 +234,8 @@ const userPieces = computed(() => {
 
 // Community = all other pieces (not owned by this user)
 const communityPieces = computed(() => {
-  if (!user.value) return []
-  return allPieces.value.filter((p) => p.owner_id !== user.value.id)
+  // if (!user.value) return []
+  return allPieces.value.filter(() => true)
 })
 
 const stats = computed(() => pottery.stats)
@@ -264,12 +268,6 @@ function onSearchClick() {
 function onAddClick() {
   router.push({ name: 'addpiece' })
 }
-function onBrowseGlazes() {
-  console.log('browse glazes')
-}
-function onExploreGallery() {
-  router.push({ name: 'gallery' })
-}
 
 const heroGradientStyle =
   'background: linear-gradient(135deg, #7A5E51 0%, #6B8F71 100%); color: white;'
@@ -278,5 +276,32 @@ const heroGradientStyle =
 <style scoped>
 .rounded-borders {
   border-radius: 16px;
+}
+
+/* Future feature styling */
+.future-feature {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.future-feature-card {
+  opacity: 0.7;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 2px dashed #ccc;
+  position: relative;
+}
+
+.future-feature-card::before {
+  content: 'Coming Soon';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ff9800;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 1;
 }
 </style>
