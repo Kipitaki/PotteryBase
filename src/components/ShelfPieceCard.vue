@@ -1,5 +1,5 @@
 <template>
-  <q-card class="piece-card" flat bordered v-bind="$attrs">
+  <q-card class="piece-card" flat bordered v-bind="$attrs" :data-piece-id="piece.id">
     <!-- ---------------- Image Area ---------------- -->
     <div
       class="img-wrap"
@@ -86,6 +86,18 @@
         flat
         size="sm"
         @click="triggerFileInput"
+      />
+      <!-- Delete button (only if owner) -->
+      <q-btn
+        v-if="isOwner"
+        class="delete-btn"
+        icon="close"
+        dense
+        round
+        flat
+        size="xs"
+        color="negative"
+        @click="confirmDelete"
       />
       <input
         ref="fileInput"
@@ -179,6 +191,23 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+
+  <!-- Delete Confirmation Dialog -->
+  <q-dialog v-model="deleteDialog.open">
+    <q-card>
+      <q-card-section>
+        <div class="text-h6">Delete Piece</div>
+        <div class="text-body2 q-mt-sm">
+          Are you sure you want to delete "{{ piece?.title || 'Untitled' }}"? This action cannot be
+          undone.
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" @click="deleteDialog.open = false" />
+        <q-btn color="negative" label="Delete" @click="deletePiece" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -220,6 +249,11 @@ const imageDialog = ref({
   url: '',
 })
 
+// Delete dialog
+const deleteDialog = ref({
+  open: false,
+})
+
 onMounted(() => {
   photos.value = props.piece?.piece_images || []
 })
@@ -253,17 +287,23 @@ async function handleFileInput(e) {
   await saveFiles(Array.from(files))
   e.target.value = ''
 }
-function onDragOver() {
-  isDragOver.value = true
+function onDragOver(e) {
+  // Only handle file drags, not card drags
+  if (e.dataTransfer.types.includes('Files')) {
+    isDragOver.value = true
+  }
 }
 function onDragLeave() {
   isDragOver.value = false
 }
 async function handleDrop(e) {
   isDragOver.value = false
-  const files = e.dataTransfer.files
-  if (!files.length) return
-  await saveFiles(Array.from(files))
+  // Only handle file drops, not card drops
+  if (e.dataTransfer.types.includes('Files')) {
+    const files = e.dataTransfer.files
+    if (!files.length) return
+    await saveFiles(Array.from(files))
+  }
 }
 async function saveFiles(files) {
   for (const file of files) {
@@ -376,6 +416,24 @@ const visibilityIcon = computed(() => {
 function goEdit() {
   router.push({ name: 'addpiece', query: { id: props.piece.id } })
 }
+
+/* ============================================================
+   DELETE HANDLING
+   ============================================================ */
+function confirmDelete() {
+  deleteDialog.value.open = true
+}
+
+async function deletePiece() {
+  try {
+    await piecesStore.deletePiece(props.piece.id)
+    deleteDialog.value.open = false
+    // The piece will be removed from the list automatically via reactivity
+  } catch (error) {
+    console.error('Error deleting piece:', error)
+    // You could add a notification here if you have a notification system
+  }
+}
 </script>
 
 <style scoped>
@@ -414,6 +472,15 @@ function goEdit() {
   right: 40px;
   top: 6px;
   background: white;
+}
+.delete-btn {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: transparent;
+  opacity: 0.8;
+  min-width: 24px;
+  min-height: 24px;
 }
 .tight {
   padding: 4px 8px;

@@ -20,14 +20,17 @@
         <draggable
           class="lane-cards"
           :list="lane.list"
-          item-key="id"
           :group="{ name: 'pieces' }"
           :animation="180"
           ghost-class="drag-ghost"
           @add="(evt) => onCardDropped(evt, lane.key)"
         >
           <template #item="{ element }">
-            <shelf-piece-card :piece="element" :subtitle="latestLabel(element)" />
+            <shelf-piece-card
+              :piece="element"
+              :subtitle="latestLabel(element)"
+              :data-piece-id="element.id"
+            />
           </template>
 
           <template #footer v-if="!lane.list.length">
@@ -92,12 +95,16 @@ function latestStageKey(stageDates = {}) {
 
 function rebuildLanes() {
   const map = Object.fromEntries(stageOrder.map((k) => [k, []]))
+  const processedPieces = new Set()
 
   for (const p of safePieces.value) {
+    if (processedPieces.has(p.id)) continue
+
     const stageDates = buildStageDates(p.piece_stage_histories)
     const key = latestStageKey(stageDates)
     if (key) {
-      map[key].push({ ...p, stageDates }) // attach derived stageDates
+      map[key].push({ ...p, stageDates })
+      processedPieces.add(p.id)
     }
   }
 
@@ -120,15 +127,36 @@ watch(safePieces, () => {
 
 /* ---------- Drag handler ---------- */
 async function onCardDropped(evt, targetStage) {
-  const moved = evt.item?.__draggable_context?.element
-  if (!moved || !moved.id) return
+  const pieceId = evt.item?.getAttribute('data-piece-id')
+  if (!pieceId) return
+
+  const moved = safePieces.value.find((p) => p.id == pieceId)
+  if (!moved) return
 
   const now = new Date().toISOString()
-  await piecesStore.addStage({
-    piece_id: moved.id,
+
+  // Optimistic update
+  moved.piece_stage_histories.push({
     stage: targetStage,
     date: now,
   })
+  rebuildLanes()
+
+  try {
+    await piecesStore.addStage({
+      piece_id: moved.id,
+      stage: targetStage,
+      date: now,
+    })
+    console.log('Stage added successfully')
+  } catch (error) {
+    console.error('Failed to add stage:', error)
+    // Roll back optimistic update if needed
+    moved.piece_stage_histories = moved.piece_stage_histories.filter(
+      (h) => !(h.stage === targetStage && h.date === now),
+    )
+    rebuildLanes()
+  }
 }
 
 /* ---------- Card subtitle helper ---------- */
@@ -153,5 +181,10 @@ function latestLabel(p) {
   flex-wrap: wrap;
   gap: 8px;
   align-items: flex-start;
+}
+.lane-placeholder {
+  padding: 12px;
+  color: #aaa;
+  font-style: italic;
 }
 </style>

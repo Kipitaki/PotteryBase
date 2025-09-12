@@ -1,0 +1,112 @@
+table:
+  name: piece_firing
+  schema: potterbase
+object_relationships:
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      columns:
+        - id
+        - piece_id
+        - temperature_f
+        - cone
+        - kiln_location
+        - kiln_type
+        - load_name
+        - notes
+        - date
+    comment: ""
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - id
+        - piece_id
+        - temperature_f
+        - cone
+        - kiln_location
+        - kiln_type
+        - load_name
+        - notes
+        - date
+      filter:
+        piece:
+          visibility:
+            _eq: Public
+    comment: ""
+  - role: public
+    permission:
+      columns:
+        - id
+        - piece_id
+        - temperature_f
+        - cone
+        - kiln_location
+        - kiln_type
+        - load_name
+        - notes
+        - date
+      filter:
+        piece:
+          visibility:
+            _eq: Public
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - piece_id
+        - temperature_f
+        - cone
+        - kiln_location
+        - kiln_type
+        - load_name
+        - notes
+        - date
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - piece_id
+        - temperature_f
+        - cone
+        - kiln_location
+        - kiln_type
+        - load_name
+        - notes
+        - date
+      filter:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+    comment: ""

@@ -34,6 +34,8 @@
             v-model:stageDates="form.stageDates"
             v-model:stageLocation="form.stageLocation"
             v-model:stageDims="form.stageDims"
+            :stage-histories="piece?.piece_stage_histories || []"
+            :piece-id="piece?.id"
             :is-hydrating="isHydrating"
           />
         </div>
@@ -256,11 +258,16 @@ function hydrateForm(piece) {
 }
 
 /* ---------- Load existing if editing ---------- */
+const piece = ref(null)
+
 onMounted(async () => {
   if (isEdit.value && editId.value) {
     isHydrating.value = true
-    const piece = await piecesStore.getPieceById(editId.value)
-    if (piece) hydrateForm(piece)
+    const loadedPiece = await piecesStore.getPieceById(editId.value)
+    if (loadedPiece) {
+      piece.value = loadedPiece
+      hydrateForm(loadedPiece)
+    }
     isHydrating.value = false
   }
   resetDirtyBaseline()

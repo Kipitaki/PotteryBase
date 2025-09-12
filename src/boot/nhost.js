@@ -6,8 +6,8 @@ import { DefaultApolloClient } from '@vue/apollo-composable'
 
 // Create Nhost client
 export const nhost = new NhostClient({
-  subdomain: 'tmrlxlwvkpqbgbgfoysh',
-  region: 'us-east-1',
+  subdomain: 'local',
+  region: 'local',
   autoSignIn: true, // restore session instantly
 })
 

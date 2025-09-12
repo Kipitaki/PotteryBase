@@ -224,12 +224,31 @@ async function addFiles(files) {
 }
 
 /* ---------- Local-only edits ---------- */
-function setMain(id) {
+async function setMain(id) {
+  // Update local state first
   photos.value = photos.value.map((p) => {
     const key = p.tempId || p.id
     return { ...p, is_main: key === id }
   })
   emit('update:modelValue', [...photos.value])
+
+  // Update database for saved photos
+  const photoToUpdate = photos.value.find((p) => (p.tempId || p.id) === id)
+  if (photoToUpdate && photoToUpdate.id && !photoToUpdate.tempId) {
+    try {
+      // First, set all photos to not main
+      for (const photo of photos.value) {
+        if (photo.id && !photo.tempId && photo.id !== photoToUpdate.id) {
+          await piecesStore.updateImage(photo.id, { is_main: false })
+        }
+      }
+      // Then set the selected photo as main
+      await piecesStore.updateImage(photoToUpdate.id, { is_main: true })
+      console.log('Updated main photo in database:', photoToUpdate.id)
+    } catch (error) {
+      console.error('Failed to update main photo in database:', error)
+    }
+  }
 }
 
 async function removePhoto(id) {

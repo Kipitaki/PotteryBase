@@ -1,0 +1,90 @@
+table:
+  name: piece_glaze
+  schema: potterbase
+object_relationships:
+  - name: glaze
+    using:
+      foreign_key_constraint_on: glaze_id
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      columns:
+        - glaze_id
+        - id
+        - layer_number
+        - piece_id
+        - application_method
+        - notes
+    comment: ""
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - glaze_id
+        - id
+        - layer_number
+        - piece_id
+        - application_method
+        - notes
+      filter: {}
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - glaze_id
+        - id
+        - layer_number
+        - piece_id
+        - application_method
+        - notes
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - glaze_id
+        - id
+        - layer_number
+        - piece_id
+        - application_method
+        - notes
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      check:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+    comment: ""

@@ -234,8 +234,10 @@ const userPieces = computed(() => {
 
 // Community = all other pieces (not owned by this user)
 const communityPieces = computed(() => {
-  // if (!user.value) return []
-  return allPieces.value.filter(() => true)
+  var userid = -1
+  if (!user.value) userid = -1
+  else userid = user.value.id
+  return allPieces.value.filter((p) => p.owner_id !== userid)
 })
 
 const stats = computed(() => pottery.stats)

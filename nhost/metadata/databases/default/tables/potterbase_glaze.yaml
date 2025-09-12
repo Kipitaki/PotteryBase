@@ -1,0 +1,73 @@
+table:
+  name: glaze
+  schema: potterbase
+array_relationships:
+  - name: piece_glazes
+    using:
+      foreign_key_constraint_on:
+        column: glaze_id
+        table:
+          name: piece_glaze
+          schema: potterbase
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - brand
+        - code
+        - color
+        - cone
+        - finish
+        - id
+        - name
+        - notes
+        - series
+    comment: ""
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - code
+        - display_name
+        - finish
+        - series
+        - id
+        - brand
+        - color
+        - cone
+        - name
+        - notes
+      filter: {}
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - code
+        - display_name
+        - finish
+        - series
+        - id
+        - brand
+        - color
+        - cone
+        - name
+        - notes
+      filter: {}
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - brand
+        - code
+        - color
+        - cone
+        - finish
+        - id
+        - name
+        - notes
+        - series
+      filter: {}
+      check: null
+    comment: ""

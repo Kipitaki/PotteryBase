@@ -14,6 +14,9 @@
         >
           {{ cone.label }}
         </q-chip>
+        <q-btn flat dense icon="add" size="sm" color="primary" @click="showAddConeDialog = true">
+          Add Cone
+        </q-btn>
       </div>
     </template>
 
@@ -33,7 +36,7 @@
       <div class="col-auto" style="width: 120px">
         <q-select
           v-model="f.cone"
-          :options="['06', '04', '6', '10']"
+          :options="coneOptions"
           dense
           hide-bottom-space
           emit-value
@@ -123,10 +126,33 @@
       </div>
     </div>
   </section-card>
+
+  <!-- Add Cone Dialog -->
+  <q-dialog v-model="showAddConeDialog">
+    <q-card style="min-width: 300px">
+      <q-card-section>
+        <div class="text-h6">Add New Firing Cone</div>
+        <div class="text-caption text-grey-7 q-mb-md">
+          Add a new cone to the system for future use
+        </div>
+        <q-input
+          v-model="newCone"
+          label="Cone Number"
+          placeholder="e.g., 06, 04, 6, 10"
+          dense
+          :rules="[(val) => !!val || 'Cone number is required']"
+        />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" @click="cancelAddCone" />
+        <q-btn color="primary" label="Add Cone" @click="addCone" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import SectionCard from './SectionCard.vue'
 import { useFiringsStore } from 'src/stores/firings'
 import { usePiecesStore } from 'src/stores/pieces' // <-- for auto-save operations
@@ -144,6 +170,18 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const rowsValue = computed(() => props.modelValue || [])
+
+// Cone options for select dropdown
+const coneOptions = computed(() => {
+  const baseCones = ['06', '04', '6', '10'] // Default cones
+  const recentConeValues = recentCones.value.map((c) => c.id)
+  const allCones = [...new Set([...baseCones, ...recentConeValues])] // Remove duplicates
+  return allCones.sort()
+})
+
+// Cone management
+const showAddConeDialog = ref(false)
+const newCone = ref('')
 
 // Auto-save mode when pieceId is provided
 const isAutoSaveMode = computed(() => props.pieceId !== null)
@@ -298,5 +336,78 @@ async function onFieldChange(idx, field, value) {
   // Update local state
   const next = rowsValue.value.map((r, i) => (i === idx ? { ...r, [field]: value } : r))
   emit('update:modelValue', next)
+}
+
+/* ============================================================
+   CONE MANAGEMENT
+   ============================================================ */
+function addCone() {
+  if (!newCone.value.trim()) return
+
+  const coneValue = newCone.value.trim()
+
+  // Check if cone already exists
+  const existingCones = recentCones.value.map((c) => c.id)
+  if (existingCones.includes(coneValue)) {
+    Notify.create({
+      message: `Cone ${coneValue} already exists`,
+      type: 'warning',
+      timeout: 2000,
+      position: 'top',
+    })
+    return
+  }
+
+  // Add cone to the system by creating a temporary firing record
+  // This will make it appear in recent cones
+  try {
+    // We'll add it to the current piece if in auto-save mode, otherwise just show success
+    if (isAutoSaveMode.value && props.pieceId) {
+      // Add a temporary firing with just the cone to make it available
+      piecesStore
+        .addFiring({
+          piece_id: props.pieceId,
+          cone: coneValue,
+          temperature_f: null,
+          kiln_type: null,
+          kiln_location: null,
+          load_name: null,
+          date: null,
+          notes: null,
+        })
+        .then(() => {
+          Notify.create({
+            message: `Cone ${coneValue} added successfully`,
+            type: 'positive',
+            timeout: 2000,
+            position: 'top',
+          })
+          // Refresh the recent cones
+          firingsStore.refetch()
+        })
+    } else {
+      Notify.create({
+        message: `Cone ${coneValue} added to system`,
+        type: 'positive',
+        timeout: 2000,
+        position: 'top',
+      })
+    }
+
+    cancelAddCone()
+  } catch (error) {
+    console.error('Failed to add cone:', error)
+    Notify.create({
+      message: 'Failed to add cone',
+      type: 'negative',
+      timeout: 2000,
+      position: 'top',
+    })
+  }
+}
+
+function cancelAddCone() {
+  showAddConeDialog.value = false
+  newCone.value = ''
 }
 </script>

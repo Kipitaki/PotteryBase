@@ -1,0 +1,96 @@
+table:
+  name: piece_stage_history
+  schema: potterbase
+object_relationships:
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      columns:
+        - id
+        - piece_id
+        - height_cm
+        - length_cm
+        - weight_g
+        - width_cm
+        - location
+        - stage
+        - date
+    comment: ""
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - id
+        - piece_id
+        - height_cm
+        - length_cm
+        - weight_g
+        - width_cm
+        - location
+        - stage
+        - date
+      filter: {}
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - piece_id
+        - height_cm
+        - length_cm
+        - weight_g
+        - width_cm
+        - location
+        - stage
+        - date
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - piece_id
+        - height_cm
+        - length_cm
+        - weight_g
+        - width_cm
+        - location
+        - stage
+        - date
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      check: {}
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+    comment: ""

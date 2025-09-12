@@ -1,0 +1,114 @@
+table:
+  name: piece_image
+  schema: potterbase
+object_relationships:
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      columns:
+        - is_main
+        - taken_at
+        - piece_id
+        - file_id
+        - notes
+        - stage
+        - url
+        - uploaded_at
+        - id
+    comment: ""
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - is_main
+        - taken_at
+        - piece_id
+        - file_id
+        - notes
+        - stage
+        - url
+        - uploaded_at
+        - id
+      filter: {}
+    comment: ""
+  - role: public
+    permission:
+      columns:
+        - is_main
+        - taken_at
+        - piece_id
+        - file_id
+        - notes
+        - stage
+        - url
+        - uploaded_at
+        - id
+      filter: {}
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - is_main
+        - taken_at
+        - piece_id
+        - file_id
+        - notes
+        - stage
+        - url
+        - uploaded_at
+        - id
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - is_main
+        - taken_at
+        - piece_id
+        - file_id
+        - notes
+        - stage
+        - url
+        - uploaded_at
+        - id
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""

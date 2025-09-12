@@ -1,0 +1,40 @@
+table:
+  name: clay_body
+  schema: potterbase
+array_relationships:
+  - name: piece_clays
+    using:
+      foreign_key_constraint_on:
+        column: clay_body_id
+        table:
+          name: piece_clay
+          schema: potterbase
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - id
+        - brand
+        - name
+        - notes
+    comment: ""
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - id
+        - brand
+        - name
+        - notes
+      filter: {}
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - brand
+        - name
+        - notes
+      filter: {}
+    comment: ""

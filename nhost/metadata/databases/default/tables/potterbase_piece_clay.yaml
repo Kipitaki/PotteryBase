@@ -1,0 +1,94 @@
+table:
+  name: piece_clay
+  schema: potterbase
+object_relationships:
+  - name: clay_body
+    using:
+      foreign_key_constraint_on: clay_body_id
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      columns:
+        - clay_body_id
+        - id
+        - piece_id
+        - notes
+    comment: ""
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - clay_body_id
+        - id
+        - piece_id
+        - notes
+      filter:
+        piece:
+          visibility:
+            _eq: Public
+    comment: ""
+  - role: public
+    permission:
+      columns:
+        - clay_body_id
+        - id
+        - piece_id
+        - notes
+      filter:
+        piece:
+          visibility:
+            _eq: Public
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - clay_body_id
+        - id
+        - piece_id
+        - notes
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - clay_body_id
+        - id
+        - piece_id
+        - notes
+      filter:
+        _or:
+          - piece:
+              owner_id:
+                _eq: X-Hasura-User-Id
+          - piece:
+              visibility:
+                _eq: Public
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        piece:
+          owner_id:
+            _eq: X-Hasura-User-Id
+    comment: ""
