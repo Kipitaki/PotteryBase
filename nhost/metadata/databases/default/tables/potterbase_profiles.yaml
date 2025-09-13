@@ -1,6 +1,10 @@
 table:
   name: profiles
   schema: potterbase
+object_relationships:
+  - name: user
+    using:
+      foreign_key_constraint_on: id
 insert_permissions:
   - role: user
     permission:
@@ -12,7 +16,7 @@ insert_permissions:
         - id
         - unit_preference
         - updated_at
-    comment: ''
+    comment: ""
 select_permissions:
   - role: public
     permission:
@@ -26,7 +30,7 @@ select_permissions:
         - updated_at
         - id
       filter: {}
-    comment: ''
+    comment: ""
   - role: user
     permission:
       columns:
@@ -39,7 +43,7 @@ select_permissions:
         - updated_at
         - id
       filter: {}
-    comment: ''
+    comment: ""
 update_permissions:
   - role: user
     permission:
@@ -52,9 +56,9 @@ update_permissions:
         - updated_at
       filter: {}
       check: {}
-    comment: ''
+    comment: ""
 delete_permissions:
   - role: user
     permission:
       filter: {}
-    comment: ''
+    comment: ""
