@@ -1,6 +1,13 @@
--- Add price field to piece table
-ALTER TABLE potterbase.piece 
-ADD COLUMN price DECIMAL(10,2);
-
--- Add a comment to document the new field
-COMMENT ON COLUMN potterbase.piece.price IS 'Price of the pottery piece in dollars';
+-- Add price field to piece table (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'potterbase' 
+        AND table_name = 'piece' 
+        AND column_name = 'price'
+    ) THEN
+        ALTER TABLE potterbase.piece ADD COLUMN price DECIMAL(10,2);
+        COMMENT ON COLUMN potterbase.piece.price IS 'Price of the pottery piece in dollars';
+    END IF;
+END $$;
