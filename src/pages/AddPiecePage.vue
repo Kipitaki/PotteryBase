@@ -29,15 +29,7 @@
       <div class="row q-col-gutter-md">
         <!-- LEFT: Stages -->
         <div class="col-12 col-md-4">
-          <stage-checklist
-            :stages="STAGES"
-            v-model:stageDates="form.stageDates"
-            v-model:stageLocation="form.stageLocation"
-            v-model:stageDims="form.stageDims"
-            :stage-histories="piece?.piece_stage_histories || []"
-            :piece-id="piece?.id"
-            :is-hydrating="isHydrating"
-          />
+          <stage-checklist :stages="STAGES" v-model="stageHistories" :piece-id="piece?.id" />
         </div>
 
         <!-- RIGHT: Clay / Glaze / Firing / Notes -->
@@ -167,7 +159,7 @@ const form = reactive({
   share: 'private',
   photos: [],
   stageLocation: '',
-  stageDates: { ...emptyStageDates(), lump: todayISO() },
+  stageDates: emptyStageDates(),
   stageDims: {}, // Dimensions for each stage
   stageIds: {}, // Stage IDs for updates
   clays: [],
@@ -255,10 +247,14 @@ function hydrateForm(piece) {
       acc[sh.stage] = sh.id
       return acc
     }, {}) || {}
+
+  // Update local stage histories
+  localStageHistories.value = piece.piece_stage_histories || []
 }
 
 /* ---------- Load existing if editing ---------- */
 const piece = ref(null)
+const localStageHistories = ref([])
 
 onMounted(async () => {
   if (isEdit.value && editId.value) {
@@ -269,7 +265,34 @@ onMounted(async () => {
       hydrateForm(loadedPiece)
     }
     isHydrating.value = false
+  } else {
+    // 👇 NEW auto-create logic
+    const randomName = nameGen.getRandomName()
+    const created = await piecesStore.createPiece({
+      title: randomName,
+      visibility: 'private',
+      notes: '',
+    })
+    piece.value = created
+    form.title = created.title
+
+    // Update URL so auto-save works everywhere
+    router.replace({ name: 'addpiece', query: { id: created.id } })
+
+    // Immediately add Lump stage
+    const lumpStage = await piecesStore.addStage({
+      piece_id: created.id,
+      stage: 'lump',
+      date: todayISO(),
+    })
+    form.stageDates.lump = todayISO()
+    form.stageIds.lump = lumpStage.id
+    form.stageDims.lump = {}
+
+    // Initialize local stage histories with the new lump stage
+    localStageHistories.value = [lumpStage]
   }
+
   resetDirtyBaseline()
 })
 
@@ -499,8 +522,43 @@ watch(
   { deep: true },
 )
 
+/* ---------- Stage histories computed ---------- */
+const stageHistories = computed({
+  get: () => {
+    console.log('[AddPiecePage] stageHistories.get() returning:', localStageHistories.value)
+    return localStageHistories.value
+  },
+  set: (newHistories) => {
+    console.log('[AddPiecePage] stageHistories.set() called with:', newHistories)
+    localStageHistories.value = newHistories
+  },
+})
+
+// Watch for changes in piece.stage_histories to keep local array in sync
+watch(
+  () => piece.value?.piece_stage_histories,
+  (newHistories) => {
+    if (newHistories && !isHydrating.value) {
+      console.log('[AddPiecePage] piece.stage_histories changed, updating local:', newHistories)
+      localStageHistories.value = newHistories
+    }
+  },
+  { deep: true },
+)
+
 /* ---------- Latest stage ---------- */
 const latestStage = computed(() => {
+  // Find the latest stage from localStageHistories
+  const stageWithDates = localStageHistories.value
+    .filter((sh) => sh.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+
+  if (stageWithDates.length > 0) {
+    const latest = stageWithDates[0]
+    return { key: latest.stage, date: latest.date }
+  }
+
+  // Fallback to form.stageDates for backward compatibility
   for (let i = stageOrder.length - 1; i >= 0; i--) {
     const k = stageOrder[i]
     const date = form.stageDates[k]
@@ -529,138 +587,59 @@ const dirty = computed(() => stringify() !== snapshot.value)
 
 /* ---------- Save ---------- */
 async function onSave() {
-  let pieceId = editId.value
+  const pieceId = editId.value || piece.value?.id
+  if (!pieceId) {
+    console.error('[onSave] No pieceId available')
+    return
+  }
 
   // ensure title
   if (!form.title || form.title.trim() === '') {
     form.title = nameGen.getRandomName()
+    await piecesStore.updatePiece(pieceId, { title: form.title })
   }
 
-  if (isEdit.value && pieceId) {
-    // In edit mode, most fields are auto-saved, just handle photos
-    // Title, notes, share, stages, clays, glazes, firings are auto-saved
-  } else {
-    // Create new piece
-    const created = await piecesStore.createPiece({
-      title: form.title,
-      visibility: form.share,
-      notes: form.notes,
-    })
-    pieceId = created.id
-
-    // Update the URL to enable auto-save for components
-    router.replace({
-      name: 'addpiece',
-      query: { id: pieceId },
-    })
-
-    // Add initial stage if set
-    if (latestStage.value) {
-      const dims = form.stageDims[latestStage.value.key] || {}
-      await piecesStore.addStage({
+  // 🔹 Save clays
+  for (const clay of form.clays) {
+    if (clay.clayId && !clay.id) {
+      await piecesStore.addClayToPiece({
         piece_id: pieceId,
-        stage: latestStage.value.key,
-        date: latestStage.value.date,
-        length_cm: dims.length
-          ? profileStore.isMetric
-            ? parseFloat(dims.length)
-            : parseFloat(dims.length) * 2.54
-          : null,
-        width_cm: dims.width
-          ? profileStore.isMetric
-            ? parseFloat(dims.width)
-            : parseFloat(dims.width) * 2.54
-          : null,
-        height_cm: dims.height
-          ? profileStore.isMetric
-            ? parseFloat(dims.height)
-            : parseFloat(dims.height) * 2.54
-          : null,
-        weight_g: dims.weight
-          ? profileStore.isMetric
-            ? parseFloat(dims.weight)
-            : parseFloat(dims.weight) * 453.592
-          : null,
-        location: dims.location || null,
+        clay_body_id: clay.clayId,
+        notes: clay.notes || null,
       })
     }
+  }
 
-    // Save all stages that have dates
-    for (const stage of stageOrder) {
-      const date = form.stageDates[stage]
-      if (date && stage !== latestStage.value?.key) {
-        const dims = form.stageDims[stage] || {}
-        await piecesStore.addStage({
-          piece_id: pieceId,
-          stage: stage,
-          date: date,
-          length_cm: dims.length
-            ? profileStore.isMetric
-              ? parseFloat(dims.length)
-              : parseFloat(dims.length) * 2.54
-            : null,
-          width_cm: dims.width
-            ? profileStore.isMetric
-              ? parseFloat(dims.width)
-              : parseFloat(dims.width) * 2.54
-            : null,
-          height_cm: dims.height
-            ? profileStore.isMetric
-              ? parseFloat(dims.height)
-              : parseFloat(dims.height) * 2.54
-            : null,
-          weight_g: dims.weight
-            ? profileStore.isMetric
-              ? parseFloat(dims.weight)
-              : parseFloat(dims.weight) * 453.592
-            : null,
-          location: dims.location || null,
-        })
-      }
-    }
-
-    // Save clays
-    for (const clay of form.clays) {
-      if (clay.clayId) {
-        await piecesStore.addClayToPiece({
-          piece_id: pieceId,
-          clay_body_id: clay.clayId,
-          notes: clay.notes || null,
-        })
-      }
-    }
-
-    // Save glazes
-    for (const glaze of form.glazes) {
-      if (glaze.glazeId) {
-        await piecesStore.addGlazeToPiece({
-          piece_id: pieceId,
-          glaze_id: glaze.glazeId,
-          layer_number: glaze.layer_number || 1,
-          application_method: glaze.application_method || null,
-          notes: glaze.notes || null,
-        })
-      }
-    }
-
-    // Save firings
-    for (const firing of form.firings) {
-      if (firing.cone) {
-        await piecesStore.addFiring({
-          piece_id: pieceId,
-          cone: firing.cone,
-          temperature_f: firing.tempF || null,
-          kiln_type: firing.kilnType || null,
-          kiln_location: firing.kilnLocation || null,
-          load_name: firing.name || null,
-          date: firing.date || null,
-          notes: firing.notes || null,
-        })
-      }
+  // 🔹 Save glazes
+  for (const glaze of form.glazes) {
+    if (glaze.glazeId && !glaze.id) {
+      await piecesStore.addGlazeToPiece({
+        piece_id: pieceId,
+        glaze_id: glaze.glazeId,
+        layer_number: glaze.layer_number || 1,
+        application_method: glaze.application_method || null,
+        notes: glaze.notes || null,
+      })
     }
   }
 
-  // Handle photo uploads (only field that still needs manual save)
+  // 🔹 Save firings
+  for (const firing of form.firings) {
+    if (firing.cone && !firing.id) {
+      await piecesStore.addFiring({
+        piece_id: pieceId,
+        cone: firing.cone,
+        temperature_f: firing.tempF || null,
+        kiln_type: firing.kilnType || null,
+        kiln_location: firing.kilnLocation || null,
+        load_name: firing.name || null,
+        date: firing.date || null,
+        notes: firing.notes || null,
+      })
+    }
+  }
+
+  // 🔹 Handle photo uploads
   for (const p of form.photos) {
     if (!p.file) continue
     const { fileMetadata, error } = await nhost.storage.upload({
