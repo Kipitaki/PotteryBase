@@ -41,6 +41,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthenticationStatus, useUserData } from '@nhost/vue'
+import { useProfileStore } from 'src/stores/profile'
 
 const router = useRouter()
 
@@ -48,10 +49,14 @@ const router = useRouter()
 const { isAuthenticated } = useAuthenticationStatus()
 const user = useUserData()
 
+// Profile store
+const { profile } = useProfileStore()
+
 const isAuth = computed(() => isAuthenticated.value)
 const userDisplayName = computed(() => {
   if (!user.value) return 'User'
-  return user.value.displayName || user.value.email || 'User'
+  // Use profile display_name if available, otherwise fall back to email
+  return profile.value?.display_name || user.value.email || 'User'
 })
 
 // Actions

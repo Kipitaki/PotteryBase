@@ -85,8 +85,8 @@ enabled = false
 
 [auth.method.emailPassword]
 hibpEnabled = false
-emailVerificationRequired = true
-passwordMinLength = 9
+emailVerificationRequired = false
+passwordMinLength = 6
 
 [auth.method.smsPasswordless]
 enabled = false

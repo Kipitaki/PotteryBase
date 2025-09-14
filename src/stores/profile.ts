@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { provideApolloClient, useQuery, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
-import { apolloClient } from 'boot/apollo'
+import { apolloClient } from 'boot/nhost'
 import { nhost } from 'boot/nhost'
 
 provideApolloClient(apolloClient)
