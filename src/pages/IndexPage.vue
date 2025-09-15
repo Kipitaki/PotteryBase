@@ -1,29 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <!-- Header -->
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-avatar square size="50px" class="q-mr-sm">
-          <img :src="logoUrl" alt="PotteryBase logo" style="object-fit: contain" />
-        </q-avatar>
-        <q-toolbar-title class="text-weight-bold">Pottery Base</q-toolbar-title>
-
-        <q-space />
-        <q-btn flat round dense icon="search" @click="onSearchClick" />
-        <q-btn flat round dense icon="favorite_border" />
-        <q-btn
-          unelevated
-          color="secondary"
-          icon="add"
-          label="Add piece"
-          class="q-ml-sm"
-          @click="onAddClick"
-        />
-
-        <!-- 👇 User dropdown -->
-        <user-dropdown />
-      </q-toolbar>
-    </q-header>
 
     <!-- Page -->
     <q-page padding class="bg-grey-1">
@@ -84,12 +61,9 @@
 
           <template v-else-if="userPieces.length">
             <template v-for="p in userPieces" :key="p.id">
-              <shelf-piece-card
-                v-if="p?.id"
-                :piece="p"
-                :subtitle="''"
-                class="col-12 col-sm-6 col-md-3 col-lg-2"
-              />
+              <div v-if="p?.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <shelf-piece-card :piece="p" :subtitle="''" />
+              </div>
             </template>
           </template>
 
@@ -113,12 +87,9 @@
 
         <template v-else-if="communityPieces.length">
           <template v-for="p in communityPieces" :key="p.id">
-            <shelf-piece-card
-              v-if="p?.id"
-              :piece="p"
-              :subtitle="''"
-              class="col-12 col-sm-6 col-md-3 col-lg-2"
-            />
+            <div v-if="p?.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
+              <shelf-piece-card :piece="p" :subtitle="''" />
+            </div>
           </template>
         </template>
 
@@ -209,8 +180,8 @@ import { useRouter } from 'vue-router'
 import { usePiecesStore } from 'src/stores/pieces'
 import { usePotteryStore } from 'src/stores/pottery-store'
 import ShelfPieceCard from 'src/components/ShelfPieceCard.vue'
-import UserDropdown from 'src/components/UserDropdown.vue'
-import logoUrl from 'assets/Potterybaselogo.svg'
+//import UserDropdown from 'src/components/UserDropdown.vue'
+//import logoUrl from 'assets/Potterybaselogo.svg'
 import { useAuthenticationStatus, useUserData } from '@nhost/vue'
 
 // --- Stores ---
@@ -264,12 +235,12 @@ watch(
 )
 
 // --- Handlers ---
-function onSearchClick() {
-  console.log('search clicked')
-}
-function onAddClick() {
-  router.push({ name: 'addpiece' })
-}
+// function onSearchClick() {
+//   console.log('search clicked')
+// }
+// function onAddClick() {
+//   router.push({ name: 'addpiece' })
+// }
 
 const heroGradientStyle =
   'background: linear-gradient(135deg, #7A5E51 0%, #6B8F71 100%); color: white;'

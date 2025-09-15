@@ -24,6 +24,7 @@
         text-color="white"
         dense
         square
+        :size="$q.screen.lt.md ? 'sm' : 'md'"
       >
         {{ stageLabel }}
       </q-chip>
@@ -36,9 +37,9 @@
         text-color="white"
         dense
         square
-        size="sm"
+        :size="$q.screen.lt.md ? 'xs' : 'sm'"
       >
-        <q-icon :name="visibilityIcon" size="12px" class="q-mr-xs" />
+        <q-icon :name="visibilityIcon" :size="$q.screen.lt.md ? '10px' : '12px'" class="q-mr-xs" />
         {{ visibilityLabel }}
       </q-chip>
       <q-chip
@@ -48,9 +49,9 @@
         text-color="white"
         dense
         square
-        size="sm"
+        :size="$q.screen.lt.md ? 'xs' : 'sm'"
       >
-        <q-icon name="person" size="12px" class="q-mr-xs" />
+        <q-icon name="person" :size="$q.screen.lt.md ? '10px' : '12px'" class="q-mr-xs" />
         {{ piece.profile?.display_name || 'Unknown Owner' }}
       </q-chip>
 
@@ -135,7 +136,7 @@
           color="brown-3"
           text-color="black"
           dense
-          size="sm"
+          :size="$q.screen.lt.md ? 'xs' : 'sm'"
         >
           {{ c.clay_body?.name || 'Unknown' }}
         </q-chip>
@@ -151,7 +152,7 @@
           color="teal-3"
           text-color="black"
           dense
-          size="sm"
+          :size="$q.screen.lt.md ? 'xs' : 'sm'"
         >
           {{ g.glaze?.name }}
         </q-chip>
@@ -167,7 +168,7 @@
           color="red-3"
           text-color="black"
           dense
-          size="sm"
+          :size="$q.screen.lt.md ? 'xs' : 'sm'"
         >
           Cone {{ f.cone }}
         </q-chip>
@@ -442,6 +443,15 @@ async function deletePiece() {
   font-size: 14px;
   display: flex;
   flex-direction: column;
+  margin: 0 auto; /* Center the card within its container */
+}
+
+/* Mobile optimizations */
+@media (max-width: 600px) {
+  .piece-card {
+    width: 160px;
+    font-size: 12px;
+  }
 }
 .img-wrap {
   position: relative;
@@ -485,6 +495,12 @@ async function deletePiece() {
 .tight {
   padding: 4px 8px;
 }
+
+@media (max-width: 600px) {
+  .tight {
+    padding: 3px 6px;
+  }
+}
 .divider {
   border-top: 1px solid #e0e0e0;
 }
@@ -496,6 +512,12 @@ async function deletePiece() {
   min-height: 150px;
   border-bottom: 1px solid #eee;
 }
+
+@media (max-width: 600px) {
+  .card-thumb {
+    min-height: 120px;
+  }
+}
 .thumb-strip {
   overflow-x: auto;
 }
@@ -504,6 +526,13 @@ async function deletePiece() {
   height: 40px;
   border: 2px solid transparent;
   border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+  .thumb-img {
+    width: 32px;
+    height: 32px;
+  }
 }
 .thumb-img:hover {
   border-color: #42a5f5;
