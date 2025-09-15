@@ -1,15 +1,13 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <!-- Header -->
-
+  <q-layout>
     <!-- Page -->
     <q-page padding class="bg-grey-1">
       <!-- Hero -->
-      <q-card class="rounded-borders q-pa-lg q-mb-xl shadow-4" :style="heroGradientStyle">
+      <q-card class="rounded-borders q-pa-lg q-mb-lg shadow-4" :style="heroGradientStyle">
         <div class="text-h4 text-weight-bold text-white q-mb-xs">
           Track your pieces. Share your glazes.
         </div>
-        <div class="text-body1 text-white q-mb-md">
+        <div class="text-body1 text-white q-mb-sm">
           From lump to kiln, keep every stage in one place.
         </div>
         <div class="row q-gutter-sm">
@@ -43,7 +41,7 @@
 
       <!-- Your Pieces -->
       <template v-if="isAuth">
-        <div class="row items-center q-mb-md">
+        <div class="row items-center q-mb-sm">
           <div class="text-h6 text-weight-bold col">Your pieces</div>
           <q-btn
             flat
@@ -54,21 +52,21 @@
           />
         </div>
 
-        <div class="row q-col-gutter-md q-mb-xl">
+        <div class="row q-col-gutter-sm q-mb-lg">
           <template v-if="!userPieces.length && loading">
             <q-spinner size="30px" color="primary" class="q-ma-md" />
           </template>
 
           <template v-else-if="userPieces.length">
             <template v-for="p in userPieces" :key="p.id">
-              <div v-if="p?.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
+              <div v-if="p?.id" class="col-6 col-sm-4 col-md-3 col-lg-2">
                 <shelf-piece-card :piece="p" :subtitle="''" />
               </div>
             </template>
           </template>
 
           <template v-else>
-            <div class="col-12 text-center text-grey q-mt-md">
+            <div class="col-12 text-center text-grey q-mt-sm">
               No pieces yet. Click <b>Add piece</b> to get started!
             </div>
           </template>
@@ -76,37 +74,37 @@
       </template>
 
       <!-- Community Pieces -->
-      <div class="row items-center q-mb-md">
+      <div class="row items-center q-mb-sm">
         <div class="text-h6 text-weight-bold col">Community pieces</div>
       </div>
 
-      <div class="row q-col-gutter-md q-mb-xl">
+      <div class="row q-col-gutter-sm q-mb-lg">
         <template v-if="!communityPieces.length && loading">
           <q-spinner size="30px" color="primary" class="q-ma-md" />
         </template>
 
         <template v-else-if="communityPieces.length">
           <template v-for="p in communityPieces" :key="p.id">
-            <div v-if="p?.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div v-if="p?.id" class="col-6 col-sm-4 col-md-3 col-lg-2">
               <shelf-piece-card :piece="p" :subtitle="''" />
             </div>
           </template>
         </template>
 
         <template v-else>
-          <div class="col-12 text-center text-grey q-mt-md">
+          <div class="col-12 text-center text-grey q-mt-sm">
             No public pieces in the community yet.
           </div>
         </template>
       </div>
 
       <!-- Stats + Activity -->
-      <div class="row q-col-gutter-lg q-mt-xl">
+      <div class="row q-col-gutter-md q-mt-lg">
         <div class="col-12 col-md-4">
           <q-card bordered class="rounded-borders shadow-2 future-feature-card">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold q-mb-xs">Your week</div>
-              <div class="text-caption text-grey-7 q-mb-md">Formed, trimmed, glazed, and fired</div>
+              <div class="text-caption text-grey-7 q-mb-sm">Formed, trimmed, glazed, and fired</div>
               <div class="row justify-around text-h5">
                 <div class="column items-center">
                   <div>{{ stats.formed }}</div>
@@ -133,7 +131,7 @@
           <q-card bordered class="rounded-borders shadow-2 future-feature-card">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold q-mb-xs">Recent activity</div>
-              <div class="text-caption text-grey-7 q-mb-md">Populated from fixtures and store</div>
+              <div class="text-caption text-grey-7 q-mb-sm">Populated from fixtures and store</div>
               <q-list separator>
                 <q-item v-for="a in activity" :key="a.id">
                   <q-item-section avatar>

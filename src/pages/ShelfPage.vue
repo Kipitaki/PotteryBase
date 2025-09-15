@@ -9,7 +9,7 @@
       Nothing on the shelf yet. Save a piece with a Fired date and no Sold status.
     </div>
 
-    <div class="row q-col-gutter-md">
+    <div class="row q-col-gutter-xs">
       <div v-for="p in shelf" :key="p.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
         <shelf-piece-card :piece="p" :subtitle="firedLabel(p)" />
       </div>

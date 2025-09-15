@@ -4,16 +4,21 @@ import { NhostClient } from '@nhost/vue'
 import { createApolloClient } from '@nhost/apollo'
 import { DefaultApolloClient } from '@vue/apollo-composable'
 
-// Local-only Nhost configuration
+// Environment-based Nhost configuration
+const isLocal = process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost'
+
 export const nhost = new NhostClient({
-  subdomain: 'local',
-  region: 'local',
+  subdomain: isLocal ? 'local' : 'tmrlxlwvkpqbgbgfoysh',
+  region: isLocal ? 'local' : 'us-east-1',
   autoSignIn: true, // restore session instantly
 
-  graphqlUrl: 'http://localhost:8080/v1/graphql',
-  authUrl: 'http://localhost:4000/v1/auth',
-  storageUrl: 'http://localhost:5000/v1/storage',
-  functionsUrl: 'http://localhost:3000/v1/functions',
+  // Only add local URLs when running locally
+  ...(isLocal && {
+    graphqlUrl: 'http://localhost:8080/v1/graphql',
+    authUrl: 'http://localhost:4000/v1/auth',
+    storageUrl: 'http://localhost:5000/v1/storage',
+    functionsUrl: 'http://localhost:3000/v1/functions',
+  }),
 })
 
 // Build Apollo client once auth is ready
@@ -43,7 +48,7 @@ export default boot(async ({ app }) => {
   })
 
   // Debug confirmation
-  console.log('✅ Nhost running in LOCAL mode (localhost services only)')
+  console.log(`✅ Nhost running in ${isLocal ? 'LOCAL' : 'PRODUCTION'} mode`)
 })
 
 export { apolloClientPromise as apolloClient }

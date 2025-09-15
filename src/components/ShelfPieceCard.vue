@@ -439,17 +439,13 @@ async function deletePiece() {
 
 <style scoped>
 .piece-card {
-  width: 240px;
-  font-size: 14px;
-  display: flex;
-  flex-direction: column;
-  margin: 0 auto; /* Center the card within its container */
+  width: 100%; /* takes full column */
+  margin: 0;
 }
 
-/* Mobile optimizations */
 @media (max-width: 600px) {
   .piece-card {
-    width: 160px;
+    max-width: 160px;
     font-size: 12px;
   }
 }
