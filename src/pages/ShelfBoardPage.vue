@@ -1,50 +1,51 @@
 <template>
   <q-page padding>
-    <!-- Top Navigation -->
+    <!-- Header -->
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h5">My Shelf (Kanban)</div>
       <div class="text-caption text-grey-7">Drag cards between rows to update stage</div>
     </div>
 
-    <!-- Debug -->
-    <pre>My Pieces: {{ safePieces.length }}</pre>
-
-    <!-- Lanes -->
+    <!-- Stage Lanes -->
     <div v-for="lane in lanes" :key="lane.key" class="q-mb-lg">
+      <!-- Lane Header -->
       <div class="row items-center q-mb-sm">
         <div class="text-subtitle1">{{ lane.label }}</div>
-        <q-badge outline color="grey-7" class="q-ml-sm">{{ lane.list.length }}</q-badge>
+        <q-badge outline color="grey-7" class="q-ml-sm">
+          {{ lane.list.length }}
+        </q-badge>
       </div>
 
-      <div class="lane-scroll" :class="{ 'lane-empty': !lane.list.length }">
-        <draggable
-          class="lane-cards"
-          :list="lane.list"
-          :group="{ name: 'pieces' }"
-          :animation="180"
-          ghost-class="drag-ghost"
-          @add="(evt) => onCardDropped(evt, lane.key)"
-        >
-          <template #item="{ element }">
-            <shelf-piece-card
-              :piece="element"
-              :subtitle="latestLabel(element)"
-              :data-piece-id="element.id"
-            />
-          </template>
+      <!-- Cards -->
+      <draggable
+        v-model="lane.list"
+        :group="{ name: 'pieces', pull: true, put: true }"
+        :data-stage="lane.key"
+        item-key="id"
+        class="lane-scroll"
+        :animation="180"
+        ghost-class="drag-ghost"
+        @start="(evt) => onDragStart(evt, lane.key)"
+        @end="(evt) => onDragEnd(evt, lane.key)"
+        @change="(evt) => onDragChange(evt, lane.key)"
+      >
+        <template #item="{ element }">
+          <div class="lane-card" :data-piece-id="element.id">
+            <shelf-piece-card :piece="element" :subtitle="latestLabel(element)" />
+          </div>
+        </template>
 
-          <template #footer v-if="!lane.list.length">
-            <div class="lane-placeholder">Drop here</div>
-          </template>
-        </draggable>
-      </div>
+        <template #footer v-if="!lane.list.length">
+          <div class="lane-placeholder">Drop here</div>
+        </template>
+      </draggable>
     </div>
   </q-page>
 </template>
 
 <script setup>
 import draggable from 'vuedraggable'
-import { reactive, onMounted, watch, computed } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import { usePiecesStore } from 'src/stores/pieces'
 import ShelfPieceCard from 'src/components/ShelfPieceCard.vue'
 import { nhost } from 'boot/nhost'
@@ -70,92 +71,96 @@ const currentUserId = nhost.auth.getUser()?.id || null
 // Only show the logged-in user's pieces
 const safePieces = computed(() => {
   const all = piecesStore.all?.value ?? []
-  return all.filter((p) => p.owner_id === currentUserId)
+  const filtered = all.filter((p) => p.owner_id === currentUserId)
+  return filtered
 })
 
 /* ---------- Reactive lanes ---------- */
-const lanes = reactive([])
+const lanes = reactive(
+  stageOrder.map((k) => ({
+    key: k,
+    label: stageLabelMap[k],
+    list: [],
+  })),
+)
 
-/* ---------- Helpers ---------- */
 function buildStageDates(histories = []) {
-  const out = {}
-  for (const h of histories) {
-    out[h.stage] = h.date
-  }
-  return out
+  return histories.reduce((acc, h) => {
+    acc[h.stage] = h.date
+    return acc
+  }, {})
 }
-
 function latestStageKey(stageDates = {}) {
   for (let i = stageOrder.length - 1; i >= 0; i--) {
-    const key = stageOrder[i]
-    if (stageDates[key]) return key
+    if (stageDates[stageOrder[i]]) return stageOrder[i]
   }
   return null
 }
 
-function rebuildLanes() {
-  const map = Object.fromEntries(stageOrder.map((k) => [k, []]))
-  const processedPieces = new Set()
+/* ---------- Distribute pieces into lanes ---------- */
+watch(
+  safePieces,
+  (pieces) => {
+    for (const lane of lanes) lane.list.splice(0)
 
-  for (const p of safePieces.value) {
-    if (processedPieces.has(p.id)) continue
-
-    const stageDates = buildStageDates(p.piece_stage_histories)
-    const key = latestStageKey(stageDates)
-    if (key) {
-      map[key].push({ ...p, stageDates })
-      processedPieces.add(p.id)
+    for (const p of pieces) {
+      const stageDates = buildStageDates(p.piece_stage_histories || [])
+      const key = latestStageKey(stageDates) || 'lump'
+      const lane = lanes.find((l) => l.key === key)
+      if (lane) {
+        lane.list.push({ ...p, stageDates })
+      }
     }
-  }
+  },
+  { immediate: true },
+)
 
-  const out = stageOrder.map((k) => ({
-    key: k,
-    label: stageLabelMap[k],
-    list: map[k],
-  }))
+/* ---------- Drag handlers ---------- */
+let dragSourceStage = null
 
-  lanes.splice(0, lanes.length, ...out)
+function onDragStart(evt, fromStage) {
+  dragSourceStage = fromStage
 }
 
-/* ---------- Lifecycle ---------- */
-onMounted(() => {
-  rebuildLanes()
-})
-watch(safePieces, () => {
-  rebuildLanes()
-})
+function onDragEnd() {
+  // Drag end handler - no action needed
+}
 
-/* ---------- Drag handler ---------- */
-async function onCardDropped(evt, targetStage) {
-  const pieceId = evt.item?.getAttribute('data-piece-id')
-  if (!pieceId) return
+function onDragChange(evt, targetStage) {
+  // Check if a piece was added to this lane (moved from another lane)
+  if (evt.added && evt.added.element && dragSourceStage && dragSourceStage !== targetStage) {
+    const pieceId = evt.added.element.id
+    addStageHistory(pieceId, targetStage)
+  }
+}
 
-  const moved = safePieces.value.find((p) => p.id == pieceId)
-  if (!moved) return
+async function addStageHistory(pieceId, targetStage) {
+  if (!pieceId) {
+    return
+  }
 
-  const now = new Date().toISOString()
+  // Find the piece to check its existing stage history
+  const piece = safePieces.value.find((p) => p.id === Number(pieceId))
+  if (!piece) {
+    return
+  }
 
-  // Optimistic update
-  moved.piece_stage_histories.push({
-    stage: targetStage,
-    date: now,
-  })
-  rebuildLanes()
+  // Check if this stage already exists in the piece's history
+  const existingStage = piece.piece_stage_histories?.find((h) => h.stage === targetStage)
+  if (existingStage) {
+    return
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const payload = { piece_id: Number(pieceId), stage: targetStage, date: today }
 
   try {
-    await piecesStore.addStage({
-      piece_id: moved.id,
-      stage: targetStage,
-      date: now,
-    })
-    console.log('Stage added successfully')
-  } catch (error) {
-    console.error('Failed to add stage:', error)
-    // Roll back optimistic update if needed
-    moved.piece_stage_histories = moved.piece_stage_histories.filter(
-      (h) => !(h.stage === targetStage && h.date === now),
-    )
-    rebuildLanes()
+    await piecesStore.addStage(payload)
+  } catch {
+    // Silent fail - stage history creation failed
+  } finally {
+    // Reset drag tracking
+    dragSourceStage = null
   }
 }
 
@@ -165,23 +170,30 @@ function latestLabel(p) {
   if (!key) return ''
   const d = p.stageDates?.[key]
   if (!d) return stageLabelMap[key]
-
-  const date = new Date(d)
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const yy = String(date.getFullYear()).slice(-2)
-
-  return `${stageLabelMap[key]} • ${mm}/${dd}/${yy}`
+  return `${stageLabelMap[key]} • ${new Date(d).toLocaleDateString()}`
 }
 </script>
 
 <style scoped>
-.lane-cards {
+.lane-scroll {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: flex-start;
+  min-height: 60px;
+  padding: 6px;
+  background: #fafafa;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
 }
+
+.lane-card {
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  min-width: 160px;
+}
+
 .lane-placeholder {
   padding: 12px;
   color: #aaa;
