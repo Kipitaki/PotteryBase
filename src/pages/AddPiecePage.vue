@@ -53,7 +53,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="row items-center justify-between q-gutter-sm q-mt-md">
+      <div class="row items-center justify-between q-gutter-sm q-mt-md q-mb-xl">
         <div>
           <q-badge v-if="dirty" color="warning" outline class="q-mr-sm">Unsaved changes</q-badge>
           <span v-else-if="isEdit" class="text-caption text-grey-7">Editing existing piece</span>
