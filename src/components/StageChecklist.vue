@@ -159,8 +159,8 @@ const props = defineProps({
       { label: 'Bisque', value: 'bisque' },
       { label: 'Glazed', value: 'glazed' },
       { label: 'Fired', value: 'fired' },
-      { label: 'Sold or Posted', value: 'sold_posted' },
-      { label: 'Sold or Kept', value: 'sold_kept' },
+      { label: 'Archived', value: 'archived' },
+      { label: 'Failed', value: 'failed' },
     ],
   },
 })

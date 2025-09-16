@@ -58,8 +58,8 @@ const STAGES = [
   { label: 'Bisque', value: 'bisque' },
   { label: 'Glazed', value: 'glazed' },
   { label: 'Fired', value: 'fired' },
-  { label: 'Sold/Posted', value: 'sold_posted' },
-  { label: 'Sold/Kept', value: 'sold_kept' },
+  { label: 'Archived', value: 'archived' },
+  { label: 'Failed', value: 'failed' },
 ]
 const stageOrder = STAGES.map((s) => s.value)
 const stageLabelMap = Object.fromEntries(STAGES.map((s) => [s.value, s.label]))

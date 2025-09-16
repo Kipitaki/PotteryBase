@@ -24,7 +24,12 @@
       </div>
 
       <!-- Photos -->
-      <photo-gallery-editor v-model="form.photos" class="q-mb-md" />
+      <photo-gallery-editor
+        v-model="form.photos"
+        :piece-id="currentPieceId"
+        :is-hydrating="isHydrating"
+        class="q-mb-md"
+      />
 
       <div class="row q-col-gutter-md">
         <!-- LEFT: Stages -->
@@ -69,7 +74,7 @@
             :to="{ name: 'shelf' }"
           />
           <q-btn flat dense label="Cancel" class="q-mr-sm" @click="handleCancel" />
-          <q-btn color="primary" :label="isEdit ? 'Save Changes' : 'Save Piece'" type="submit" />
+          <q-btn color="primary" label="Done" type="submit" />
         </div>
       </div>
     </q-form>
@@ -91,7 +96,6 @@ import FiringRowsEditor from 'src/components/FiringRowsEditor.vue'
 import { useNameGeneratorStore } from 'src/stores/nameGenerator'
 import { usePiecesStore } from 'src/stores/pieces'
 import { useProfileStore } from 'src/stores/profile'
-import { nhost } from 'boot/nhost'
 
 const piecesStore = usePiecesStore()
 const nameGen = useNameGeneratorStore()
@@ -106,8 +110,8 @@ const STAGES = [
   { label: 'Bisque', value: 'bisque' },
   { label: 'Glazed', value: 'glazed' },
   { label: 'Fired', value: 'fired' },
-  { label: 'Sold/Posted', value: 'sold_posted' },
-  { label: 'Sold/Kept', value: 'sold_kept' },
+  { label: 'Archived', value: 'archived' },
+  { label: 'Failed', value: 'failed' },
 ]
 const stageLabelMap = Object.fromEntries(STAGES.map((s) => [s.value, s.label]))
 const stageOrder = STAGES.map((s) => s.value)
@@ -263,6 +267,10 @@ onMounted(async () => {
     if (loadedPiece) {
       piece.value = loadedPiece
       hydrateForm(loadedPiece)
+      // Wait for all reactive updates to complete before allowing auto-save
+      await nextTick()
+      // Small delay to ensure all watchers have finished
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
     isHydrating.value = false
   } else {
@@ -572,12 +580,14 @@ const snapshot = ref('')
 const stringify = () => {
   // In edit mode, exclude auto-saved fields from dirty tracking
   if (isEdit.value) {
-    // const { title, notes, share, stageDates, clays, glazes, firings, ...rest } = form
-    //return JSON.stringify(rest)
-    const { photos, stageLocation } = form
-    return JSON.stringify({ photos, stageLocation })
+    // Photos are now auto-saved, so only check stageLocation for dirty state
+    const { stageLocation } = form
+    return JSON.stringify({ stageLocation })
   }
-  return JSON.stringify(form)
+  // For new pieces, exclude photos from dirty check since they're auto-saved
+  const rest = { ...form }
+  delete rest.photos
+  return JSON.stringify(rest)
 }
 async function resetDirtyBaseline() {
   await nextTick()
@@ -639,31 +649,11 @@ async function onSave() {
     }
   }
 
-  // 🔹 Handle photo uploads
-  for (const p of form.photos) {
-    if (!p.file) continue
-    const { fileMetadata, error } = await nhost.storage.upload({
-      file: p.file,
-      bucketId: 'default',
-      options: { public: true },
-    })
-    if (error) {
-      console.error('Photo upload failed:', error)
-      continue
-    }
-    const url = nhost.storage.getPublicUrl({ fileId: fileMetadata.id })
-    await piecesStore.addImage({
-      piece_id: pieceId,
-      file_id: fileMetadata.id,
-      url,
-      stage: p.stage,
-      notes: p.notes,
-      is_main: p.is_main,
-    })
-  }
+  // 🔹 Photos are now auto-saved by PhotoGalleryEditor
+  // No manual photo upload needed here anymore
 
   await resetDirtyBaseline()
-  showAutoSaveToast('Piece saved successfully!')
+  showAutoSaveToast('Piece completed!')
   router.push({ name: 'shelf' })
 }
 

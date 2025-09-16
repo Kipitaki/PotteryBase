@@ -336,16 +336,7 @@ function goView() {
 /* ============================================================
    STAGE HANDLING
    ============================================================ */
-const STAGE_ORDER = [
-  'lump',
-  'formed',
-  'trimmed',
-  'bisque',
-  'glazed',
-  'fired',
-  'sold_posted',
-  'sold_kept',
-]
+const STAGE_ORDER = ['lump', 'formed', 'trimmed', 'bisque', 'glazed', 'fired', 'archived', 'failed']
 const LABELS = {
   lump: 'Lump',
   formed: 'Formed',
@@ -353,8 +344,8 @@ const LABELS = {
   bisque: 'Bisque',
   glazed: 'Glazed',
   fired: 'Fired',
-  sold_posted: 'Sold/Posted',
-  sold_kept: 'Sold/Kept',
+  archived: 'Archived',
+  failed: 'Failed',
 }
 const COLORS = {
   lump: 'blue-grey-3',
@@ -363,8 +354,8 @@ const COLORS = {
   bisque: 'orange-3',
   glazed: 'teal-3',
   fired: 'red-3',
-  sold_posted: 'purple-3',
-  sold_kept: 'brown-3',
+  archived: 'purple-3',
+  failed: 'brown-3',
 }
 const stageHistories = computed(() => props.piece?.piece_stage_histories || [])
 const stageKey = computed(() => {

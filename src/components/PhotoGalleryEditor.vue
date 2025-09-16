@@ -45,7 +45,20 @@
             :src="photo.previewUrl || photo.url"
             style="width: 100%; height: 160px; object-fit: cover"
             class="rounded-borders"
-          />
+          >
+            <!-- Uploading overlay -->
+            <template v-if="photo.uploading">
+              <div class="absolute-full flex flex-center bg-black-50">
+                <q-spinner color="white" size="24px" />
+              </div>
+            </template>
+            <!-- Error overlay -->
+            <template v-if="photo.error">
+              <div class="absolute-full flex flex-center bg-red-50">
+                <q-icon name="error" color="negative" size="24px" />
+              </div>
+            </template>
+          </q-img>
 
           <!-- Main badge -->
           <q-badge
@@ -91,6 +104,7 @@
           dense
           clearable
           class="q-mt-sm"
+          @update:model-value="(val) => updatePhotoField(photo, 'stage', val)"
         />
         <q-input
           v-model="photo.notes"
@@ -99,6 +113,7 @@
           type="textarea"
           autogrow
           class="q-mt-sm"
+          @update:model-value="(val) => updatePhotoField(photo, 'notes', val)"
         />
       </div>
     </div>
@@ -106,14 +121,18 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import SectionCard from './SectionCard.vue'
 import { usePiecesStore } from 'src/stores/pieces'
+import { nhost } from 'src/boot/nhost'
+import { Notify } from 'quasar'
 
 const piecesStore = usePiecesStore()
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] }, // local unsaved photos
+  pieceId: { type: Number, default: null }, // piece ID for auto-save
+  isHydrating: { type: Boolean, default: false }, // prevent auto-save during initial data loading
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -125,6 +144,21 @@ watch(
   (val) => (photos.value = [...val]),
 )
 
+// Auto-save mode when pieceId is provided
+const isAutoSaveMode = computed(() => props.pieceId !== null)
+
+function showAutoSaveToast(message = 'Photo updated') {
+  if (isAutoSaveMode.value) {
+    Notify.create({
+      message,
+      type: 'positive',
+      timeout: 1500,
+      position: 'top',
+      progress: true,
+    })
+  }
+}
+
 // Stage options
 const stageOptions = [
   { label: 'Lump', value: 'lump' },
@@ -133,8 +167,8 @@ const stageOptions = [
   { label: 'Bisque', value: 'bisque' },
   { label: 'Glazed', value: 'glazed' },
   { label: 'Fired', value: 'fired' },
-  { label: 'Sold/Posted', value: 'sold_posted' },
-  { label: 'Sold/Kept', value: 'sold_kept' },
+  { label: 'Archived', value: 'archived' },
+  { label: 'Failed', value: 'failed' },
 ]
 
 /* ---------- File input & Drop ---------- */
@@ -201,7 +235,7 @@ async function resizeImage(file, maxSize = 1600) {
   })
 }
 
-/* ---------- Add local-only photos ---------- */
+/* ---------- Add photos with auto-save ---------- */
 async function addFiles(files) {
   const newPhotos = []
   for (const file of files) {
@@ -209,18 +243,76 @@ async function addFiles(files) {
     const blob = await resizeImage(file, 1600)
     const previewUrl = URL.createObjectURL(blob)
 
-    newPhotos.push({
+    const tempPhoto = {
       tempId: `ph_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
       file: blob,
       previewUrl,
       stage: null,
       notes: '',
       is_main: photos.value.length === 0,
-    })
-  }
+      uploading: true, // Add uploading state
+    }
 
-  photos.value = [...photos.value, ...newPhotos]
-  emit('update:modelValue', photos.value)
+    newPhotos.push(tempPhoto)
+
+    // Add to UI immediately for better UX
+    photos.value = [...photos.value, tempPhoto]
+    emit('update:modelValue', photos.value)
+
+    // Auto-save to database if pieceId is provided
+    if (isAutoSaveMode.value && !props.isHydrating) {
+      try {
+        // Upload file to storage
+        const { fileMetadata, error } = await nhost.storage.upload({
+          file: blob,
+          bucketId: 'default',
+          options: { public: true },
+        })
+
+        if (error) {
+          console.error('Photo upload failed:', error)
+          tempPhoto.uploading = false
+          tempPhoto.error = 'Upload failed'
+          continue
+        }
+
+        const url = nhost.storage.getPublicUrl({ fileId: fileMetadata.id })
+
+        // Save to database
+        const result = await piecesStore.addImage({
+          piece_id: props.pieceId,
+          file_id: fileMetadata.id,
+          url,
+          stage: tempPhoto.stage,
+          notes: tempPhoto.notes,
+          is_main: tempPhoto.is_main,
+        })
+
+        // Update the photo with database info
+        const updatedPhoto = {
+          ...tempPhoto,
+          id: result.id,
+          url: url,
+          uploading: false,
+          error: null,
+        }
+
+        // Replace temp photo with saved photo
+        const photoIndex = photos.value.findIndex((p) => p.tempId === tempPhoto.tempId)
+        if (photoIndex !== -1) {
+          photos.value[photoIndex] = updatedPhoto
+          emit('update:modelValue', [...photos.value])
+        }
+
+        showAutoSaveToast('Photo uploaded successfully!')
+      } catch (error) {
+        console.error('[PhotoGalleryEditor] Failed to save photo to database:', error)
+        tempPhoto.uploading = false
+        tempPhoto.error = 'Save failed'
+        showAutoSaveToast('Photo upload failed', 'negative')
+      }
+    }
+  }
 }
 
 /* ---------- Local-only edits ---------- */
@@ -295,14 +387,27 @@ async function removePhoto(id) {
   emit('update:modelValue', [...photos.value])
 }
 
-//function updatePhoto(photo) {
-// called on stage/notes change
-//  const idx = photos.value.findIndex((p) => (p.tempId || p.id) === (photo.tempId || photo.id))
-//  if (idx !== -1) {
-//    photos.value[idx] = { ...photo }
-//   emit('update:modelValue', [...photos.value])
-//  }
-//}
+/* ---------- Auto-save photo field changes ---------- */
+async function updatePhotoField(photo, field, value) {
+  // Update local state first
+  const photoIndex = photos.value.findIndex(
+    (p) => (p.tempId || p.id) === (photo.tempId || photo.id),
+  )
+  if (photoIndex !== -1) {
+    photos.value[photoIndex] = { ...photos.value[photoIndex], [field]: value }
+    emit('update:modelValue', [...photos.value])
+  }
+
+  // Auto-save to database if photo has ID (is saved) and pieceId is provided
+  if (photo.id && isAutoSaveMode.value && !props.isHydrating) {
+    try {
+      await piecesStore.updateImage(photo.id, { [field]: value })
+      showAutoSaveToast('Photo updated')
+    } catch (error) {
+      console.error('[PhotoGalleryEditor] Failed to update photo field in database:', error)
+    }
+  }
+}
 </script>
 
 <style scoped>
