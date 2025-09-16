@@ -66,6 +66,7 @@ insert_permissions:
         - title
         - updated_at
         - visibility
+        - whatisit
     comment: ""
 select_permissions:
   - role: anonymous
@@ -96,6 +97,7 @@ select_permissions:
         - title
         - updated_at
         - visibility
+        - whatisit
       filter:
         visibility:
           _eq: Public
@@ -111,6 +113,7 @@ select_permissions:
         - title
         - updated_at
         - visibility
+        - whatisit
       filter:
         _or:
           - owner_id:
@@ -131,6 +134,7 @@ update_permissions:
         - title
         - updated_at
         - visibility
+        - whatisit
       filter: {}
       check:
         owner_id:

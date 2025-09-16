@@ -1,10 +1,18 @@
 <template>
-  <div class="row q-col-gutter-md items-start q-mb-md">
+  <div class="row q-col-gutter-md items-start q-mb-xs">
     <!-- Title -->
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-4">
+      <div class="row items-center q-gutter-xs q-mb-xs">
+        <span class="text-caption text-grey-7">Piece Title</span>
+      </div>
       <div class="row q-gutter-sm items-end">
         <div class="col">
-          <q-input v-model="localTitle" label="Piece Title" dense hide-bottom-space />
+          <q-input
+            v-model="localTitle"
+            dense
+            hide-bottom-space
+            placeholder="Enter piece title..."
+          />
         </div>
         <div class="col-auto">
           <q-btn
@@ -22,21 +30,24 @@
     </div>
 
     <!-- Share -->
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6">
+      <div class="row items-center q-gutter-xs q-mb-xs">
+        <span class="text-caption text-grey-7">Share Settings</span>
+      </div>
       <q-select
         v-model="localShare"
         :options="shareOptions"
-        label="Share Settings"
         dense
         emit-value
         map-options
         hide-bottom-space
+        placeholder="Select sharing level..."
       />
     </div>
 
     <!-- Latest stage -->
     <div class="col-12 col-md-2">
-      <div class="q-pa-sm bg-white rounded-borders row items-center">
+      <div class="q-pa-xs bg-white rounded-borders row items-center">
         <q-icon name="flag" size="18px" class="q-mr-sm" />
         <div class="text-subtitle2">Latest:</div>
         <q-chip v-if="latest?.key" color="primary" text-color="white" size="sm" class="q-ml-sm">

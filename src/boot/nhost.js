@@ -14,10 +14,10 @@ export const nhost = new NhostClient({
 
   // Only add local URLs when running locally
   ...(isLocal && {
-    graphqlUrl: 'http://localhost:8080/v1/graphql',
-    authUrl: 'http://localhost:4000/v1/auth',
-    storageUrl: 'http://localhost:5000/v1/storage',
-    functionsUrl: 'http://localhost:3000/v1/functions',
+    graphqlUrl: 'https://local.hasura.local.nhost.run/v1/graphql',
+    authUrl: 'https://local.auth.local.nhost.run/v1/auth',
+    storageUrl: 'https://local.storage.local.nhost.run/v1/storage',
+    functionsUrl: 'https://local.functions.local.nhost.run/v1/functions',
   }),
 })
 

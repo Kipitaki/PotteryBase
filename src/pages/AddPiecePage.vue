@@ -10,12 +10,41 @@
         class="q-mb-xs"
       />
 
-      <!-- Notes -->
+      <!-- What is it & Notes -->
       <div class="row q-col-gutter-md items-start q-mb-xs">
-        <div class="col-12 col-md-10">
+        <!-- LEFT: What is it -->
+        <div class="col-12 col-md-4">
+          <div class="row items-center q-gutter-xs q-mb-xs">
+            <span class="text-caption text-grey-7">What is it?</span>
+
+            <q-chip
+              v-for="option in recentWhatisitOptions"
+              :key="option"
+              dense
+              clickable
+              outline
+              color="grey-6"
+              size="sm"
+              @click="form.whatisit = option"
+            >
+              {{ option }}
+            </q-chip>
+          </div>
+          <q-input
+            v-model="form.whatisit"
+            dense
+            hide-bottom-space
+            placeholder="e.g., mug, bowl, vase..."
+          />
+        </div>
+
+        <!-- RIGHT: Notes -->
+        <div class="col-12 col-md-8">
+          <div class="row items-center q-gutter-xs q-mb-xs">
+            <span class="text-caption text-grey-7">Notes</span>
+          </div>
           <q-input
             v-model="form.notes"
-            label="Notes"
             dense
             hide-bottom-space
             placeholder="Add notes about this piece..."
@@ -124,6 +153,17 @@ const isEdit = computed(() => !!route.query.id)
 const editId = computed(() => route.query.id || null)
 const currentPieceId = computed(() => (isEdit.value ? parseInt(editId.value) : null))
 
+/* ---------- Recent whatisit options ---------- */
+const recentWhatisitOptions = computed(() => {
+  const allPieces = piecesStore.all?.value || []
+  const whatisitValues = allPieces
+    .filter((p) => p.whatisit && p.whatisit.trim() !== '')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // Most recent first
+    .map((p) => p.whatisit)
+    .slice(0, 5) // Get the 5 most recent
+  return whatisitValues
+})
+
 /* ---------- Auto-save utilities ---------- */
 function showAutoSaveToast(message = 'Changes saved automatically') {
   $q.notify({
@@ -160,6 +200,7 @@ function emptyStageDates() {
 }
 const form = reactive({
   title: '',
+  whatisit: '',
   share: 'private',
   photos: [],
   stageLocation: '',
@@ -175,6 +216,7 @@ const form = reactive({
 /* ---------- Hydrate form ---------- */
 function hydrateForm(piece) {
   form.title = piece.title
+  form.whatisit = piece.whatisit || ''
   form.share = piece.visibility || 'private'
   form.notes = piece.notes || ''
 
@@ -334,6 +376,21 @@ watch(
     clearTimeout(notesDebounce)
     notesDebounce = setTimeout(() => {
       autoSavePiece({ notes: newNotes || null })
+    }, 1000) // 1 second debounce
+  },
+)
+
+// Auto-save whatisit changes
+let whatisitDebounce = null
+watch(
+  () => form.whatisit,
+  (newWhatisit, oldWhatisit) => {
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
+    if (newWhatisit === oldWhatisit) return
+
+    clearTimeout(whatisitDebounce)
+    whatisitDebounce = setTimeout(() => {
+      autoSavePiece({ whatisit: newWhatisit || null })
     }, 1000) // 1 second debounce
   },
 )

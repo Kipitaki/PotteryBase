@@ -17,6 +17,7 @@ const PIECES = gql`
       id
       title
       notes
+      whatisit
       owner_id
       created_at
       updated_at
@@ -94,6 +95,7 @@ const PIECE_BY_ID = gql`
       id
       title
       notes
+      whatisit
       visibility
       created_at
       updated_at
@@ -185,6 +187,7 @@ const CREATEPIECE = gql`
       id
       title
       notes
+      whatisit
     }
   }
 `

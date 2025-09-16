@@ -223,6 +223,14 @@ watch(
   () => piecesStore.all?.value,
   (val) => {
     console.log('[Pieces] result changed →', val)
+
+    // Log whatisit data
+    if (val && val.length > 0) {
+      const whatisitData = val
+        .filter((p) => p.whatisit && p.whatisit.trim() !== '')
+        .map((p) => ({ id: p.id, title: p.title, whatisit: p.whatisit }))
+      console.log('[Whatisit] Data:', whatisitData)
+    }
   },
 )
 watch(
