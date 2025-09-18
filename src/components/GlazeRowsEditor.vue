@@ -36,8 +36,6 @@
         hide-bottom-space
         @filter="filterAll"
         @update:model-value="onQuickPick"
-        :new-value-mode="'add-unique'"
-        @new-value="onQuickNew"
       />
     </div>
 
@@ -58,41 +56,31 @@
           <div class="col-auto drag-handle" style="cursor: grab">
             <q-icon name="drag_indicator" color="grey-5" size="18px" />
           </div>
-          <!-- Select shows chip with glaze name -->
-          <div class="col-auto" style="min-width: 240px; max-width: 320px">
-            <q-select
-              v-model="g.glazeId"
-              :options="filteredAll"
-              option-value="id"
-              option-label="label"
-              emit-value
-              map-options
-              label="Glaze"
+
+          <!-- Application order -->
+          <div class="col-auto">
+            <q-chip dense color="primary" text-color="white" size="sm">
+              #{{ g.application_order || 1 }}
+            </q-chip>
+          </div>
+
+          <!-- Glaze display chip (read-only) -->
+          <div class="col-auto">
+            <q-chip
+              v-if="g.glazeId"
               dense
-              use-input
-              input-debounce="0"
-              clearable
-              hide-bottom-space
-              @filter="filterAll"
-              @update:model-value="(val) => onRowGlazeChanged(i, val)"
+              square
+              :color="chipColor(g.glazeId)"
+              text-color="white"
+              size="md"
             >
-              <template #selected>
-                <q-chip
-                  v-if="g.glazeId"
-                  dense
-                  square
-                  :color="chipColor(g.glazeId)"
-                  text-color="white"
-                >
-                  {{ getGlazeName(g.glazeId) }}
-                </q-chip>
-                <span v-else>Glaze</span>
-              </template>
-            </q-select>
+              {{ getGlazeName(g.glazeId) }}
+            </q-chip>
+            <span v-else class="text-grey-6">No glaze selected</span>
           </div>
 
           <!-- Layer number -->
-          <div class="col-2">
+          <div class="col-auto" style="min-width: 75px; max-width: 50px">
             <q-input
               v-model="g.layer_number"
               type="number"
@@ -104,7 +92,7 @@
           </div>
 
           <!-- Application method -->
-          <div class="col-3">
+          <div class="col-auto" style="min-width: 140px; max-width: 200px">
             <q-input
               v-model="g.application_method"
               label="Method"
@@ -292,27 +280,6 @@ async function addGlazeRow(glazeId, glazeName = '') {
   emit('update:modelValue', next)
 }
 
-async function onRowGlazeChanged(idx, glazeId) {
-  const currentRow = rowsValue.value[idx]
-  const label = getGlazeLabel(glazeId) || ''
-
-  // Auto-save to database if pieceId is provided and row has ID
-  if (isAutoSaveMode.value && currentRow.id) {
-    try {
-      await piecesStore.updatePieceGlaze(currentRow.id, {
-        glaze_id: glazeId,
-      })
-      showAutoSaveToast('Glaze updated')
-    } catch (error) {
-      console.error('[GlazeRowsEditor] Failed to update glaze in database:', error)
-      return // Don't update UI if save failed
-    }
-  }
-
-  const next = rowsValue.value.map((r, i) => (i === idx ? { ...r, glazeId, glazeName: label } : r))
-  emit('update:modelValue', next)
-}
-
 async function remove(i) {
   const rowToRemove = rowsValue.value[i]
 
@@ -327,9 +294,33 @@ async function remove(i) {
     }
   }
 
+  // Remove the glaze from the array
   const next = [...rowsValue.value]
   next.splice(i, 1)
-  emit('update:modelValue', next)
+
+  // Reorder the remaining glazes to be sequential (1, 2, 3, etc.)
+  const reorderedGlazes = next.map((glaze, index) => ({
+    ...glaze,
+    application_order: index + 1,
+  }))
+
+  // Update the database with new order numbers
+  if (isAutoSaveMode.value) {
+    for (let j = 0; j < reorderedGlazes.length; j++) {
+      const glaze = reorderedGlazes[j]
+      if (glaze.id && glaze.application_order !== j + 1) {
+        try {
+          await piecesStore.updatePieceGlaze(glaze.id, {
+            application_order: j + 1,
+          })
+        } catch (error) {
+          console.error('[GlazeRowsEditor] Failed to update glaze order after deletion:', error)
+        }
+      }
+    }
+  }
+
+  emit('update:modelValue', reorderedGlazes)
 }
 
 async function onFieldChange(idx, field, value) {
@@ -382,20 +373,5 @@ async function onQuickPick(id) {
   const label = getGlazeLabel(id) || ''
   await addGlazeRow(id, label)
   quickPick.value = null
-}
-
-async function onQuickNew(text) {
-  const name = (text || '').trim()
-  if (!name) return
-  try {
-    const created = await glazesStore.createGlaze({ name })
-    await glazesStore.refetch()
-    await glazesStore.refetchRecent()
-
-    await addGlazeRow(created.id, created.name)
-    quickPick.value = null
-  } catch (e) {
-    console.error('[GlazePicker] onQuickNew failed:', e)
-  }
 }
 </script>

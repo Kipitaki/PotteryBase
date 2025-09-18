@@ -238,6 +238,16 @@ function hydrateForm(piece) {
       application_order: g.application_order || 1,
     })) || []
 
+  console.log(
+    '[AddPiecePage] Hydrated glazes:',
+    form.glazes.map((g) => ({
+      id: g.id,
+      glazeId: g.glazeId,
+      application_order: g.application_order,
+      layer_number: g.layer_number,
+    })),
+  )
+
   form.firings =
     piece.piece_firings?.map((f) => ({
       id: f.id,
