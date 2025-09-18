@@ -45,77 +45,93 @@
     <div v-if="!rowsValue.length" class="text-grey-7">No glazes yet.</div>
 
     <!-- Glaze rows -->
-    <div
-      v-for="(g, i) in rowsValue"
-      :key="g.id ?? `local-${g.glazeId}`"
-      class="row items-center no-wrap q-col-gutter-sm q-mb-xs"
+    <draggable
+      v-model="glazeRows"
+      item-key="id"
+      @change="onDragChange"
+      :disabled="!isAutoSaveMode"
+      handle=".drag-handle"
     >
-      <!-- Select shows chip with glaze name -->
-      <div class="col-auto" style="min-width: 240px; max-width: 320px">
-        <q-select
-          v-model="g.glazeId"
-          :options="filteredAll"
-          option-value="id"
-          option-label="label"
-          emit-value
-          map-options
-          label="Glaze"
-          dense
-          use-input
-          input-debounce="0"
-          clearable
-          hide-bottom-space
-          @filter="filterAll"
-          @update:model-value="(val) => onRowGlazeChanged(i, val)"
-        >
-          <template #selected>
-            <q-chip v-if="g.glazeId" dense square :color="chipColor(g.glazeId)" text-color="white">
-              {{ getGlazeName(g.glazeId) }}
-            </q-chip>
-            <span v-else>Glaze</span>
-          </template>
-        </q-select>
-      </div>
+      <template #item="{ element: g, index: i }">
+        <div class="row items-center no-wrap q-col-gutter-sm q-mb-xs">
+          <!-- Drag handle -->
+          <div class="col-auto drag-handle" style="cursor: grab">
+            <q-icon name="drag_indicator" color="grey-5" size="18px" />
+          </div>
+          <!-- Select shows chip with glaze name -->
+          <div class="col-auto" style="min-width: 240px; max-width: 320px">
+            <q-select
+              v-model="g.glazeId"
+              :options="filteredAll"
+              option-value="id"
+              option-label="label"
+              emit-value
+              map-options
+              label="Glaze"
+              dense
+              use-input
+              input-debounce="0"
+              clearable
+              hide-bottom-space
+              @filter="filterAll"
+              @update:model-value="(val) => onRowGlazeChanged(i, val)"
+            >
+              <template #selected>
+                <q-chip
+                  v-if="g.glazeId"
+                  dense
+                  square
+                  :color="chipColor(g.glazeId)"
+                  text-color="white"
+                >
+                  {{ getGlazeName(g.glazeId) }}
+                </q-chip>
+                <span v-else>Glaze</span>
+              </template>
+            </q-select>
+          </div>
 
-      <!-- Layer number -->
-      <div class="col-2">
-        <q-input
-          v-model="g.layer_number"
-          type="number"
-          label="Layer"
-          dense
-          hide-bottom-space
-          @update:model-value="(val) => onFieldChange(i, 'layer_number', val)"
-        />
-      </div>
+          <!-- Layer number -->
+          <div class="col-2">
+            <q-input
+              v-model="g.layer_number"
+              type="number"
+              label="Layer"
+              dense
+              hide-bottom-space
+              @update:model-value="(val) => onFieldChange(i, 'layer_number', val)"
+            />
+          </div>
 
-      <!-- Application method -->
-      <div class="col-3">
-        <q-input
-          v-model="g.application_method"
-          label="Method"
-          dense
-          hide-bottom-space
-          @update:model-value="(val) => onFieldChange(i, 'application_method', val)"
-        />
-      </div>
+          <!-- Application method -->
+          <div class="col-3">
+            <q-input
+              v-model="g.application_method"
+              label="Method"
+              dense
+              hide-bottom-space
+              @update:model-value="(val) => onFieldChange(i, 'application_method', val)"
+            />
+          </div>
 
-      <!-- Notes -->
-      <div class="col">
-        <q-input
-          v-model="g.notes"
-          label="Notes"
-          dense
-          hide-bottom-space
-          @update:model-value="(val) => onFieldChange(i, 'notes', val)"
-        />
-      </div>
+          <!-- Notes -->
+          <div class="col">
+            <q-input
+              v-model="g.notes"
+              label="Notes"
+              dense
+              hide-bottom-space
+              @update:model-value="(val) => onFieldChange(i, 'notes', val)"
+            />
+          </div>
 
-      <!-- Remove -->
-      <div class="col-auto">
-        <q-btn flat dense round icon="close" color="negative" @click="remove(i)" />
-      </div>
-    </div>
+          <!-- Remove -->
+          <div class="col-auto">
+            <q-btn flat dense round icon="close" color="negative" @click="remove(i)" />
+          </div>
+        </div>
+      </template>
+    </draggable>
   </section-card>
 </template>
 
@@ -125,6 +141,7 @@ import SectionCard from './SectionCard.vue'
 import { useGlazesStore } from 'src/stores/glazes' // <-- we'll build this next
 import { usePiecesStore } from 'src/stores/pieces' // <-- for auto-save operations
 import { Notify } from 'quasar'
+import draggable from 'vuedraggable'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -153,6 +170,26 @@ function showAutoSaveToast(message = 'Glaze updated') {
 }
 
 const rowsValue = computed(() => props.modelValue || [])
+
+// Computed property for drag/drop that reverses order for display (bottom-to-top)
+const glazeRows = computed({
+  get: () => {
+    // Display in reverse order (bottom-to-top application order)
+    // For now, use layer_number as a proxy for application order
+    return [...rowsValue.value].sort(
+      (a, b) => (b.layer_number || 0) - (a.layer_number || 0),
+    )
+  },
+  set: (newOrder) => {
+    // When dragged, update layer_number based on new positions
+    // newOrder is in display order (reversed), so we need to reverse again for application order
+    const updatedRows = newOrder.map((row, index) => ({
+      ...row,
+      layer_number: newOrder.length - index, // Reverse the index for application order
+    }))
+    emit('update:modelValue', updatedRows)
+  },
+})
 
 /* ---- Options ---- */
 const allOptions = computed(() => glazesStore.options.value || [])
@@ -184,6 +221,33 @@ function getGlazeLabel(id) {
   return opt ? opt.label : ''
 }
 
+/* ---- Drag and drop ---- */
+async function onDragChange() {
+  // Update layer_number for all rows in the database
+  if (!isAutoSaveMode.value) return
+
+  const currentRows = glazeRows.value
+
+  for (let i = 0; i < currentRows.length; i++) {
+    const row = currentRows[i]
+    const newOrder = currentRows.length - i // Reverse order for application
+
+    if (row.id && row.layer_number !== newOrder) {
+      try {
+        await piecesStore.updatePieceGlaze(row.id, {
+          layer_number: newOrder,
+        })
+      } catch (error) {
+        console.error('[GlazeRowsEditor] Failed to update glaze order:', error)
+      }
+    }
+  }
+
+  if (currentRows.length > 0) {
+    showAutoSaveToast('Glaze order updated')
+  }
+}
+
 /* ---- Local add / change / remove ---- */
 async function addGlazeRow(glazeId, glazeName = '') {
   if (!glazeId) return
@@ -191,11 +255,15 @@ async function addGlazeRow(glazeId, glazeName = '') {
   const exists = rowsValue.value.some((r) => String(r.glazeId) === String(glazeId))
   if (exists) return
 
+  // Calculate next order number (highest existing order + 1)
+  const maxOrder = Math.max(0, ...rowsValue.value.map((r) => r.layer_number || 0))
+  const nextOrder = maxOrder + 1
+
   const newRow = {
     id: null,
     glazeId,
     glazeName,
-    layer_number: null,
+    layer_number: nextOrder,
     application_method: '',
     notes: '',
   }
@@ -207,7 +275,7 @@ async function addGlazeRow(glazeId, glazeName = '') {
         piece_id: props.pieceId,
         glaze_id: glazeId,
         notes: '',
-        layer_number: 1,
+        layer_number: nextOrder,
         application_method: null,
       })
       // Update the row with the returned ID

@@ -265,6 +265,7 @@ const ADDGLAZETOPIECE = gql`
       id
       piece_id
       glaze_id
+      application_order
       notes
     }
   }
