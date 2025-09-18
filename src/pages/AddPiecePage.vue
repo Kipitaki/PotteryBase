@@ -235,7 +235,6 @@ function hydrateForm(piece) {
       notes: g.notes || '',
       layer_number: g.layer_number,
       application_method: g.application_method || '',
-      application_order: g.application_order || 1,
     })) || []
 
   form.firings =

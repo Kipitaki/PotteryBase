@@ -27,6 +27,7 @@ insert_permissions:
         - application_method
         - application_order
         - notes
+        - test_field
     comment: ''
 select_permissions:
   - role: public
@@ -39,6 +40,7 @@ select_permissions:
         - application_method
         - application_order
         - notes
+        - test_field
       filter: {}
     comment: ''
   - role: user
@@ -51,6 +53,7 @@ select_permissions:
         - application_method
         - application_order
         - notes
+        - test_field
       filter:
         _or:
           - piece:
@@ -71,6 +74,7 @@ update_permissions:
         - application_method
         - application_order
         - notes
+        - test_field
       filter:
         _or:
           - piece:
