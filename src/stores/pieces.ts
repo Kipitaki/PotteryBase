@@ -39,10 +39,11 @@ const PIECES = gql`
         }
       }
 
-      piece_glazes(order_by: { layer_number: asc }) {
+      piece_glazes(order_by: { application_order: asc }) {
         id
         layer_number
         application_method
+        application_order
         notes
         glaze {
           id
@@ -116,10 +117,11 @@ const PIECE_BY_ID = gql`
         }
       }
 
-      piece_glazes(order_by: { layer_number: asc }) {
+      piece_glazes(order_by: { application_order: asc }) {
         id
         layer_number
         application_method
+        application_order
         notes
         glaze {
           id
@@ -265,6 +267,7 @@ const ADDGLAZETOPIECE = gql`
       id
       piece_id
       glaze_id
+      application_order
       notes
     }
   }

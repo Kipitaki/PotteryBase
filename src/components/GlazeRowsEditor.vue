@@ -175,17 +175,16 @@ const rowsValue = computed(() => props.modelValue || [])
 const glazeRows = computed({
   get: () => {
     // Display in reverse order (bottom-to-top application order)
-    // For now, use layer_number as a proxy for application order
     return [...rowsValue.value].sort(
-      (a, b) => (b.layer_number || 0) - (a.layer_number || 0),
+      (a, b) => (b.application_order || 0) - (a.application_order || 0),
     )
   },
   set: (newOrder) => {
-    // When dragged, update layer_number based on new positions
+    // When dragged, update application_order based on new positions
     // newOrder is in display order (reversed), so we need to reverse again for application order
     const updatedRows = newOrder.map((row, index) => ({
       ...row,
-      layer_number: newOrder.length - index, // Reverse the index for application order
+      application_order: newOrder.length - index, // Reverse the index for application order
     }))
     emit('update:modelValue', updatedRows)
   },
@@ -223,7 +222,7 @@ function getGlazeLabel(id) {
 
 /* ---- Drag and drop ---- */
 async function onDragChange() {
-  // Update layer_number for all rows in the database
+  // Update application_order for all rows in the database
   if (!isAutoSaveMode.value) return
 
   const currentRows = glazeRows.value
@@ -232,10 +231,10 @@ async function onDragChange() {
     const row = currentRows[i]
     const newOrder = currentRows.length - i // Reverse order for application
 
-    if (row.id && row.layer_number !== newOrder) {
+    if (row.id && row.application_order !== newOrder) {
       try {
         await piecesStore.updatePieceGlaze(row.id, {
-          layer_number: newOrder,
+          application_order: newOrder,
         })
       } catch (error) {
         console.error('[GlazeRowsEditor] Failed to update glaze order:', error)
@@ -256,15 +255,16 @@ async function addGlazeRow(glazeId, glazeName = '') {
   if (exists) return
 
   // Calculate next order number (highest existing order + 1)
-  const maxOrder = Math.max(0, ...rowsValue.value.map((r) => r.layer_number || 0))
+  const maxOrder = Math.max(0, ...rowsValue.value.map((r) => r.application_order || 0))
   const nextOrder = maxOrder + 1
 
   const newRow = {
     id: null,
     glazeId,
     glazeName,
-    layer_number: nextOrder,
+    layer_number: null,
     application_method: '',
+    application_order: nextOrder,
     notes: '',
   }
 
@@ -275,8 +275,9 @@ async function addGlazeRow(glazeId, glazeName = '') {
         piece_id: props.pieceId,
         glaze_id: glazeId,
         notes: '',
-        layer_number: nextOrder,
+        layer_number: 1,
         application_method: null,
+        application_order: nextOrder,
       })
       // Update the row with the returned ID
       newRow.id = result.id
