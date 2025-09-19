@@ -123,8 +123,37 @@
 
     <!-- ---------------- Title ---------------- -->
     <q-card-section class="tight">
-      <div class="text-subtitle1 ellipsis">{{ piece?.title || 'Untitled' }}</div>
-      <div v-if="subtitle" class="text-caption text-grey-6 ellipsis">{{ subtitle }}</div>
+      <div class="row items-center no-wrap">
+        <!-- Fixed-width like slot prevents reflow -->
+        <div class="like-slot">
+          <q-icon
+            :name="isLiked ? 'whatshot' : 'whatshot_outline'"
+            :color="isLiked ? 'red' : 'grey-6'"
+            size="20px"
+            class="cursor-pointer like-icon"
+            @click.stop="handleToggleLike"
+          >
+            <q-tooltip
+              v-if="likeTooltipText"
+              class="bg-grey-8"
+              :offset="[10, 10]"
+              anchor="top middle"
+              self="bottom middle"
+            >
+              {{ likeTooltipText }}
+            </q-tooltip>
+          </q-icon>
+        </div>
+
+        <div class="col">
+          <div class="text-subtitle1 ellipsis">
+            {{ piece?.title || 'Untitled' }}
+          </div>
+          <div v-if="subtitle" class="text-caption text-grey-6 ellipsis">
+            {{ subtitle }}
+          </div>
+        </div>
+      </div>
     </q-card-section>
 
     <!-- ---------------- Clays ---------------- -->
@@ -249,7 +278,20 @@ const imageDialog = ref({
   open: false,
   url: '',
 })
+/* ============================================================
+   LIKES HANDLING
+   ============================================================ */
+const isLiked = computed(() => piecesStore.isLikedByUser(props.piece.id))
+const likeTooltipText = computed(() => piecesStore.getLikeTooltipText(props.piece.id))
 
+async function handleToggleLike() {
+  try {
+    await piecesStore.toggleLike(props.piece.id)
+  } catch (error) {
+    console.error('Error toggling like:', error)
+    // You could add a notification here if you have a notification system
+  }
+}
 // Delete dialog
 const deleteDialog = ref({
   open: false,
@@ -536,5 +578,20 @@ async function deletePiece() {
   top: 6px;
   background: white;
   position: absolute;
+}
+.q-btn[icon='whatshot'] {
+  transition: transform 0.2s;
+}
+.q-btn[icon='whatshot']:active {
+  transform: scale(1.2);
+}
+.like-slot {
+  width: 28px; /* keep icon width stable */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.like-icon {
+  display: inline-block;
 }
 </style>

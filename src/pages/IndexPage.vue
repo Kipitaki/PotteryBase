@@ -25,8 +25,7 @@
             text-color="white"
             icon="photo_library"
             label="Explore gallery"
-            disable
-            class="future-feature"
+            @click="router.push({ name: 'gallery' })"
           />
           <q-btn
             outline

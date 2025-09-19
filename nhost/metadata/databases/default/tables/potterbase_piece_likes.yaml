@@ -1,0 +1,10 @@
+table:
+  name: piece_likes
+  schema: potterbase
+object_relationships:
+  - name: piece
+    using:
+      foreign_key_constraint_on: piece_id
+  - name: profile
+    using:
+      foreign_key_constraint_on: user_id

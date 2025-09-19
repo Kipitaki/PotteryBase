@@ -40,6 +40,13 @@ array_relationships:
         table:
           name: piece_image
           schema: potterbase
+  - name: piece_likes
+    using:
+      foreign_key_constraint_on:
+        column: piece_id
+        table:
+          name: piece_likes
+          schema: potterbase
   - name: piece_stage_histories
     using:
       foreign_key_constraint_on:

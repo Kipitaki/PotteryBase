@@ -11,39 +11,44 @@ const apolloClient = createApolloClient({
       potterbase_piece: {
         fields: {
           piece_stage_histories: {
-            merge(existing = [], incoming) {
-              // Replace existing with incoming data to avoid cache conflicts
-              return incoming
-            }
+            // eslint-disable-next-line no-unused-vars
+            merge(oldData = [], freshData) {
+              // Replace strategy: use fresh server data, ignore old cached data
+              return freshData
+            },
           },
           piece_glazes: {
-            merge(existing = [], incoming) {
-              // Replace existing with incoming data to avoid cache conflicts
-              return incoming
-            }
+            // eslint-disable-next-line no-unused-vars
+            merge(oldData = [], freshData) {
+              // Replace strategy: use fresh server data, ignore old cached data
+              return freshData
+            },
           },
           piece_firings: {
-            merge(existing = [], incoming) {
-              // Replace existing with incoming data to avoid cache conflicts
-              return incoming
-            }
+            // eslint-disable-next-line no-unused-vars
+            merge(oldData = [], freshData) {
+              // Replace strategy: use fresh server data, ignore old cached data
+              return freshData
+            },
           },
           piece_images: {
-            merge(existing = [], incoming) {
-              // Replace existing with incoming data to avoid cache conflicts
-              return incoming
-            }
+            // eslint-disable-next-line no-unused-vars
+            merge(oldData = [], freshData) {
+              // Replace strategy: use fresh server data, ignore old cached data
+              return freshData
+            },
           },
           piece_clays: {
-            merge(existing = [], incoming) {
-              // Replace existing with incoming data to avoid cache conflicts
-              return incoming
-            }
-          }
-        }
-      }
-    }
-  }
+            // eslint-disable-next-line no-unused-vars
+            merge(oldData = [], freshData) {
+              // Replace strategy: use fresh server data, ignore old cached data
+              return freshData
+            },
+          },
+        },
+      },
+    },
+  },
 })
 
 export default boot(({ app }) => {

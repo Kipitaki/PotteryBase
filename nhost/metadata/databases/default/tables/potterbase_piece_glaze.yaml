@@ -28,7 +28,7 @@ insert_permissions:
         - application_order
         - notes
         - test_field
-    comment: ''
+    comment: ""
 select_permissions:
   - role: public
     permission:
@@ -42,7 +42,7 @@ select_permissions:
         - notes
         - test_field
       filter: {}
-    comment: ''
+    comment: ""
   - role: user
     permission:
       columns:
@@ -62,7 +62,7 @@ select_permissions:
           - piece:
               visibility:
                 _eq: Public
-    comment: ''
+    comment: ""
 update_permissions:
   - role: user
     permission:
@@ -87,7 +87,7 @@ update_permissions:
         piece:
           owner_id:
             _eq: X-Hasura-User-Id
-    comment: ''
+    comment: ""
 delete_permissions:
   - role: user
     permission:
@@ -95,4 +95,4 @@ delete_permissions:
         piece:
           owner_id:
             _eq: X-Hasura-User-Id
-    comment: ''
+    comment: ""
