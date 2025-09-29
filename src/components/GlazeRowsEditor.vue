@@ -23,7 +23,7 @@
     <div class="q-mb-sm" style="max-width: 420px">
       <q-select
         v-model="quickPick"
-        :options="filteredAll"
+        :options="filteredAllWithAddOption"
         option-value="id"
         option-label="label"
         emit-value
@@ -41,6 +41,9 @@
 
     <!-- No glazes yet -->
     <div v-if="!rowsValue.length" class="text-grey-7">No glazes yet.</div>
+
+    <!-- Add Glaze Dialog -->
+    <AddGlazeDialog v-model="showAddGlazeDialog" @glaze-added="onNewGlazeAdded" />
 
     <!-- Glaze rows -->
     <draggable
@@ -126,6 +129,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import SectionCard from './SectionCard.vue'
+import AddGlazeDialog from './AddGlazeDialog.vue'
 import { useGlazesStore } from 'src/stores/glazes' // <-- we'll build this next
 import { usePiecesStore } from 'src/stores/pieces' // <-- for auto-save operations
 import { Notify } from 'quasar'
@@ -181,7 +185,27 @@ const glazeRows = computed({
 /* ---- Options ---- */
 const allOptions = computed(() => glazesStore.options.value || [])
 const filteredAll = ref([])
+const showAddGlazeDialog = ref(false)
+
 watch(allOptions, (v) => (filteredAll.value = (v || []).slice()), { immediate: true })
+
+// Computed property that adds "Add New Glaze" option when no results found
+const filteredAllWithAddOption = computed(() => {
+  const base = filteredAll.value || []
+  const hasResults = base.length > 0
+
+  if (!hasResults) {
+    return [
+      {
+        id: 'add-new-glaze',
+        label: '+ Add New Glaze',
+        isAddOption: true,
+      },
+    ]
+  }
+
+  return base
+})
 
 function filterAll(val, update) {
   update(() => {
@@ -370,8 +394,22 @@ function chipColor(glazeId) {
 
 async function onQuickPick(id) {
   if (!id) return
+
+  // Check if this is the "Add New Glaze" option
+  if (id === 'add-new-glaze') {
+    showAddGlazeDialog.value = true
+    quickPick.value = null
+    return
+  }
+
   const label = getGlazeLabel(id) || ''
   await addGlazeRow(id, label)
   quickPick.value = null
+}
+
+// Handle when a new glaze is added via the dialog
+async function onNewGlazeAdded(newGlaze) {
+  // Add the newly created glaze to the current piece
+  await addGlazeRow(newGlaze.id, newGlaze.name)
 }
 </script>
