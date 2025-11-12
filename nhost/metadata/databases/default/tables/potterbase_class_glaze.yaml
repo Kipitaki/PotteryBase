@@ -1,0 +1,38 @@
+table:
+  name: class_glaze
+  schema: potterbase
+object_relationships:
+  - name: glaze
+    using:
+      foreign_key_constraint_on: glaze_id
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - id
+        - glaze_id
+        - quantity
+        - unit
+        - location
+        - status
+        - notes
+        - created_at
+        - updated_at
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - glaze_id
+        - quantity
+        - unit
+        - location
+        - status
+        - notes
+        - created_at
+        - updated_at
+      filter: {}
+      allow_aggregations: true
+    comment: ""

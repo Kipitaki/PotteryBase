@@ -49,6 +49,17 @@
           :class="activeTab === 'shelf' ? 'nav-btn-active' : ''"
         />
 
+        <!-- Glazes -->
+        <q-btn
+          unelevated
+          color="secondary"
+          icon="palette"
+          label="Glazes"
+          @click="goGlazes"
+          no-caps
+          :class="activeTab === 'glazes' ? 'nav-btn-active' : ''"
+        />
+
         <!-- Add Piece -->
         <q-btn
           unelevated
@@ -94,6 +105,17 @@
           :class="activeTab === 'shelf' ? 'nav-btn-active-mobile' : ''"
         />
 
+        <!-- Glazes -->
+        <q-btn
+          flat
+          dense
+          round
+          icon="palette"
+          size="sm"
+          @click="goGlazes"
+          :class="activeTab === 'glazes' ? 'nav-btn-active-mobile' : ''"
+        />
+
         <!-- Add Piece -->
         <q-btn
           unelevated
@@ -124,6 +146,7 @@ const activeTab = computed(() => {
   const path = route.path
   if (path === '/' || path === '/home') return 'home'
   if (path.startsWith('/shelf')) return 'shelf'
+  if (path.startsWith('/glazes')) return 'glazes'
   if (path.startsWith('/add')) return 'add'
   return ''
 })
@@ -134,6 +157,10 @@ function goHome() {
 
 function goShelf() {
   router.push('/shelf')
+}
+
+function goGlazes() {
+  router.push('/glazes')
 }
 
 function onSearchClick() {

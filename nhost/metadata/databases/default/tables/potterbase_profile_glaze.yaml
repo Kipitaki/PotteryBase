@@ -1,0 +1,68 @@
+table:
+  name: profile_glaze
+  schema: potterbase
+object_relationships:
+  - name: glaze
+    using:
+      foreign_key_constraint_on: glaze_id
+  - name: profile
+    using:
+      foreign_key_constraint_on: profile_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _and:
+          - profile_id:
+              _eq: X-Hasura-User-Id
+      columns:
+        - profile_id
+        - glaze_id
+        - quantity
+        - unit
+        - location
+        - status
+        - notes
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - profile_id
+        - glaze_id
+        - quantity
+        - unit
+        - location
+        - status
+        - notes
+        - created_at
+        - updated_at
+      filter:
+        profile_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - quantity
+        - unit
+        - location
+        - status
+        - notes
+      filter:
+        profile_id:
+          _eq: X-Hasura-User-Id
+      check:
+        profile_id:
+          _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        profile_id:
+          _eq: X-Hasura-User-Id
+    comment: ""

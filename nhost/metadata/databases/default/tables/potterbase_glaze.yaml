@@ -2,12 +2,26 @@ table:
   name: glaze
   schema: potterbase
 array_relationships:
+  - name: class_glaze_entries
+    using:
+      foreign_key_constraint_on:
+        column: glaze_id
+        table:
+          name: class_glaze
+          schema: potterbase
   - name: piece_glazes
     using:
       foreign_key_constraint_on:
         column: glaze_id
         table:
           name: piece_glaze
+          schema: potterbase
+  - name: profile_glazes
+    using:
+      foreign_key_constraint_on:
+        column: glaze_id
+        table:
+          name: profile_glaze
           schema: potterbase
 insert_permissions:
   - role: user
