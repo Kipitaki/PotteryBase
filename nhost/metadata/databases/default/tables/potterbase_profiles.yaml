@@ -13,15 +13,6 @@ array_relationships:
         table:
           name: profile_glaze
           schema: potterbase
-  - name: piece_likes
-    using:
-      manual_configuration:
-        column_mapping:
-          user_id: id
-        insertion_order: null
-        remote_table:
-          name: piece_likes
-          schema: potterbase
 insert_permissions:
   - role: user
     permission:
