@@ -7,7 +7,12 @@ object_relationships:
       foreign_key_constraint_on: piece_id
   - name: profile
     using:
-      foreign_key_constraint_on: user_id
+      manual_configuration:
+        remote_table:
+          schema: potterbase
+          name: profiles
+        column_mapping:
+          user_id: id
 insert_permissions:
   - role: user
     permission:
