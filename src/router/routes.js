@@ -30,6 +30,11 @@ const routes = [
         component: () => import('pages/GlazeInventoryPage.vue'),
       },
       {
+        path: 'glazes/all',
+        name: 'allGlazes',
+        component: () => import('pages/AllGlazesPage.vue'),
+      },
+      {
         path: 'login',
         name: 'login',
         component: () => import('pages/LoginPage.vue'),

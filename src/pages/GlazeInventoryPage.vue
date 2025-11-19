@@ -1,8 +1,17 @@
 <template>
   <q-page padding class="glaze-inventory-page">
-    <div class="text-h5 text-weight-bold q-mb-xs">Glaze Inventory</div>
+    <div class="row items-center justify-between q-mb-xs">
+      <div class="text-h5 text-weight-bold">Glaze Inventory</div>
+      <q-btn
+        flat
+        icon="list"
+        label="View All Glazes"
+        color="primary"
+        @click="$router.push('/glazes/all')"
+      />
+    </div>
     <div class="text-body2 text-grey-7 q-mb-lg">
-      Track the glazes you own and see what’s available in the shared class stash.
+      Track the glazes you own and see what's available in the shared class stash.
     </div>
 
     <div class="row q-col-gutter-xl">
@@ -14,6 +23,16 @@
               <q-badge v-if="myGlazes.length" outline color="primary" align="top">
                 {{ myGlazes.length }}
               </q-badge>
+              <q-btn
+                color="primary"
+                icon="upload"
+                label="Import CSV"
+                dense
+                outline
+                :loading="csvImporting"
+                :disable="csvImporting || !isAuthed"
+                @click="csvDialog = true"
+              />
               <q-btn
                 color="primary"
                 icon="edit"
@@ -292,10 +311,217 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+
+  <!-- CSV/JSON Import Dialog -->
+  <q-dialog v-model="csvDialog" persistent>
+    <q-card style="min-width: 600px; max-width: 900px">
+      <q-card-section>
+        <div class="text-h6">Import Glazes</div>
+        <div class="text-caption text-grey-7 q-mt-sm">
+          Upload a file or paste CSV/JSON data. Must include a <code>code</code> column/field that
+          matches glaze codes. Optional: <code>quantity</code>, <code>unit</code>,
+          <code>location</code>, <code>status</code>, <code>notes</code>.
+        </div>
+      </q-card-section>
+
+      <q-card-section>
+        <q-tabs v-model="importTab" class="text-grey" active-color="primary">
+          <q-tab name="file" label="Upload File" icon="attach_file" />
+          <q-tab name="csv" label="Paste CSV" icon="content_paste" />
+          <q-tab name="json" label="Paste JSON" icon="code" />
+        </q-tabs>
+
+        <q-separator />
+
+        <q-tab-panels v-model="importTab" animated>
+          <q-tab-panel name="file">
+            <q-file
+              v-model="csvFile"
+              label="Choose CSV or JSON file"
+              accept=".csv,.json,text/csv,application/json"
+              outlined
+              :disable="csvImporting"
+              @update:model-value="handleFileUpload"
+            >
+              <template v-slot:prepend>
+                <q-icon name="attach_file" />
+              </template>
+            </q-file>
+          </q-tab-panel>
+
+          <q-tab-panel name="csv">
+            <div class="text-subtitle2 q-mb-sm">Paste CSV data:</div>
+            <q-input
+              v-model="pastedData"
+              type="textarea"
+              outlined
+              rows="10"
+              placeholder="code,quantity,unit,location,status,notes&#10;AM-123,2,lb,Shelf A,available,My favorite glaze&#10;PC-456,1,oz,Drawer 2,low,Need to reorder"
+              :disable="csvImporting"
+              @update:model-value="parsePastedData"
+            />
+          </q-tab-panel>
+
+          <q-tab-panel name="json">
+            <div class="text-subtitle2 q-mb-sm">Paste JSON data:</div>
+            <q-input
+              v-model="pastedData"
+              type="textarea"
+              outlined
+              rows="10"
+              placeholder='[&#10;  {"code": "AM-123", "quantity": 2, "unit": "lb", "location": "Shelf A", "status": "available", "notes": "My favorite glaze"},&#10;  {"code": "PC-456", "quantity": 1, "unit": "oz", "location": "Drawer 2", "status": "low", "notes": "Need to reorder"}&#10;]'
+              :disable="csvImporting"
+              @update:model-value="parsePastedData"
+            />
+          </q-tab-panel>
+        </q-tab-panels>
+
+        <div v-if="csvPreview.length" class="q-mt-md">
+          <div class="text-subtitle2 q-mb-sm">Preview ({{ csvPreview.length }} rows)</div>
+          <q-table
+            :rows="csvPreview.slice(0, 5)"
+            :columns="csvColumns"
+            row-key="__index"
+            flat
+            dense
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:body-cell-code="props">
+              <q-td :props="props">
+                <div class="row items-center q-gutter-xs">
+                  <span>{{ props.value }}</span>
+                  <q-icon
+                    v-if="glazeCodeMap && glazeCodeMap.has(props.value)"
+                    name="check_circle"
+                    color="positive"
+                    size="sm"
+                  />
+                  <q-icon
+                    v-else-if="glazeCodeMap"
+                    name="error"
+                    color="negative"
+                    size="sm"
+                    :title="`Glaze with code '${props.value}' not found`"
+                  />
+                </div>
+              </q-td>
+            </template>
+          </q-table>
+          <div v-if="csvPreview.length > 5" class="text-caption text-grey-7 q-mt-xs">
+            ... and {{ csvPreview.length - 5 }} more rows
+          </div>
+        </div>
+
+        <div v-if="csvImportResults" class="q-mt-md">
+          <q-banner :class="csvImportResults.failed > 0 ? 'bg-warning' : 'bg-positive'" rounded>
+            <template v-slot:avatar>
+              <q-icon
+                :name="csvImportResults.failed > 0 ? 'warning' : 'check_circle'"
+                color="white"
+              />
+            </template>
+            <div class="text-white">
+              <div class="text-weight-bold">
+                Import complete: {{ csvImportResults.success }} succeeded,
+                {{ csvImportResults.failed }} failed
+              </div>
+              <div v-if="csvImportResults.errors.length" class="q-mt-sm">
+                <div
+                  v-for="(err, idx) in csvImportResults.errors.slice(0, 5)"
+                  :key="idx"
+                  class="text-caption"
+                >
+                  Code "{{ err.code }}": {{ err.error }}
+                </div>
+                <div v-if="csvImportResults.errors.length > 5" class="text-caption">
+                  ... and {{ csvImportResults.errors.length - 5 }} more errors
+                </div>
+              </div>
+            </div>
+          </q-banner>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          label="View All Glazes"
+          icon="list"
+          :disable="csvImporting"
+          @click="viewGlazesDialog = true"
+        />
+        <q-btn flat label="Cancel" :disable="csvImporting" @click="closeCsvDialog" />
+        <q-btn
+          color="primary"
+          label="Import"
+          :loading="csvImporting"
+          :disable="!csvPreview.length || csvImporting"
+          @click="importCSV"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- View All Glazes Dialog -->
+  <q-dialog v-model="viewGlazesDialog">
+    <q-card style="min-width: 700px; max-width: 1000px">
+      <q-card-section>
+        <div class="text-h6">All Glazes in Database</div>
+        <div class="text-caption text-grey-7 q-mt-sm">
+          Search by code, name, brand, or color to find glazes for your CSV import.
+        </div>
+      </q-card-section>
+
+      <q-card-section>
+        <q-input
+          v-model="glazeSearch"
+          outlined
+          placeholder="Search glazes by code, name, brand, or color..."
+          clearable
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </q-card-section>
+
+      <q-card-section class="q-pt-none">
+        <q-table
+          :rows="filteredGlazes || []"
+          :columns="glazeTableColumns"
+          row-key="id"
+          flat
+          dense
+          :rows-per-page-options="[10, 25, 50, 100]"
+          :pagination="{ rowsPerPage: 25 }"
+        >
+          <template v-slot:body-cell-code="props">
+            <q-td :props="props">
+              <div class="text-weight-medium">{{ props.value || '(no code)' }}</div>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-name="props">
+            <q-td :props="props">
+              <div>{{ props.value || '-' }}</div>
+              <div class="text-caption text-grey-7">
+                {{ props.row.brand ? props.row.brand : '' }}
+                <span v-if="props.row.brand && props.row.color"> • </span>
+                {{ props.row.color || '' }}
+              </div>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn flat label="Close" color="primary" @click="viewGlazesDialog = false" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { date } from 'quasar'
 import { useGlazesStore } from 'src/stores/glazes'
 import { useGlazeInventoryStore } from 'src/stores/glazeInventory'
@@ -324,6 +550,34 @@ const selectedGlazeIds = ref([])
 const manageSearchAvailable = ref('')
 const manageSearchSelected = ref('')
 
+// CSV/JSON Import
+const csvDialog = ref(false)
+const importTab = ref('file')
+const csvFile = ref(null)
+const pastedData = ref('')
+const csvPreview = ref([])
+const csvImporting = ref(false)
+const csvImportResults = ref(null)
+const csvColumns = [
+  { name: 'code', label: 'Code', field: 'code', align: 'left' },
+  { name: 'quantity', label: 'Quantity', field: 'quantity', align: 'left' },
+  { name: 'unit', label: 'Unit', field: 'unit', align: 'left' },
+  { name: 'location', label: 'Location', field: 'location', align: 'left' },
+  { name: 'status', label: 'Status', field: 'status', align: 'left' },
+  { name: 'notes', label: 'Notes', field: 'notes', align: 'left' },
+]
+
+// View Glazes Dialog
+const viewGlazesDialog = ref(false)
+const glazeSearch = ref('')
+const glazeTableColumns = [
+  { name: 'code', label: 'Code', field: 'code', align: 'left', sortable: true },
+  { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
+  { name: 'cone', label: 'Cone', field: 'cone', align: 'center', sortable: true },
+  { name: 'series', label: 'Series', field: 'series', align: 'left', sortable: true },
+  { name: 'finish', label: 'Finish', field: 'finish', align: 'left', sortable: true },
+]
+
 const profileId = inventoryStore.profileId
 const isAuthed = computed(() => Boolean(profileId.value))
 const myGlazes = computed(() => inventoryStore.myGlazes.value || [])
@@ -336,6 +590,21 @@ const allGlazeOptions = computed(() =>
     label: opt.label,
   })),
 )
+
+// Create a map of glaze codes to glaze IDs for CSV matching
+const glazeCodeMap = computed(() => {
+  const map = new Map()
+  // glazesStore.all is a computed ref, so we need to check if it exists and is an array
+  const allGlazes = glazesStore.all?.value || []
+  if (Array.isArray(allGlazes)) {
+    allGlazes.forEach((glaze) => {
+      if (glaze && glaze.code) {
+        map.set(String(glaze.code).trim(), glaze.id)
+      }
+    })
+  }
+  return map
+})
 
 const optionsMap = computed(() => {
   const map = new Map()
@@ -373,8 +642,69 @@ const editingGlazeName = computed(() => {
   return glazeDisplay(editingEntry.value.glaze)
 })
 
+// Filtered glazes for the view dialog
+const filteredGlazes = computed(() => {
+  const allGlazes = glazesStore.all?.value || []
+  if (!Array.isArray(allGlazes) || allGlazes.length === 0) {
+    return []
+  }
+
+  // Create a copy of the array to avoid mutating the read-only reactive array
+  const glazes = [...allGlazes]
+  const search = glazeSearch.value.trim().toLowerCase()
+
+  if (!search) {
+    return glazes.sort((a, b) => {
+      const codeA = (a.code || '').toLowerCase()
+      const codeB = (b.code || '').toLowerCase()
+      return codeA.localeCompare(codeB)
+    })
+  }
+
+  return glazes
+    .filter((glaze) => {
+      const code = (glaze.code || '').toLowerCase()
+      const name = (glaze.name || '').toLowerCase()
+      const brand = (glaze.brand || '').toLowerCase()
+      const color = (glaze.color || '').toLowerCase()
+      const searchLower = search.toLowerCase()
+
+      return (
+        code.includes(searchLower) ||
+        name.includes(searchLower) ||
+        brand.includes(searchLower) ||
+        color.includes(searchLower)
+      )
+    })
+    .sort((a, b) => {
+      const codeA = (a.code || '').toLowerCase()
+      const codeB = (b.code || '').toLowerCase()
+      return codeA.localeCompare(codeB)
+    })
+})
+
 onMounted(() => {
   glazesStore.refetch()
+})
+
+// Ensure glazes are loaded when CSV dialog opens
+watch(csvDialog, async (isOpen) => {
+  if (isOpen) {
+    const all = glazesStore.all?.value || []
+    if (!all.length) {
+      await glazesStore.refetch()
+    }
+  }
+})
+
+// Ensure glazes are loaded when view glazes dialog opens
+watch(viewGlazesDialog, async (isOpen) => {
+  if (isOpen) {
+    const all = glazesStore.all?.value || []
+    if (!all.length) {
+      await glazesStore.refetch()
+    }
+  }
 })
 
 function glazeDisplay(glaze) {
@@ -384,10 +714,11 @@ function glazeDisplay(glaze) {
 }
 
 function getMyPiecesForGlaze(entry) {
-  if (!entry?.glaze?.piece_glazes || !profileId.value) {
+  // Pieces are already filtered by owner_id on the server
+  if (!entry?.glaze?.piece_glazes) {
     return []
   }
-  return entry.glaze.piece_glazes.filter((pg) => pg.piece?.owner_id === profileId.value)
+  return entry.glaze.piece_glazes
 }
 
 function formatRelative(value) {
@@ -529,6 +860,193 @@ async function removeCurrentGlaze() {
   if (!editingEntry.value) return
   await removeGlaze(editingEntry.value.id)
   editDialog.value = false
+}
+
+// CSV/JSON Import Functions
+function parseCSVLine(line) {
+  const result = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  result.push(current.trim())
+  return result
+}
+
+function parseCSVText(text) {
+  const lines = text.split('\n').filter((line) => line.trim())
+  if (lines.length === 0) {
+    return []
+  }
+
+  // Parse header
+  const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase().trim())
+  const codeIndex = headers.findIndex((h) => h === 'code')
+  if (codeIndex === -1) {
+    throw new Error('CSV must have a "code" column')
+  }
+
+  // Parse rows
+  const rows = []
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i])
+    const row = { __index: i - 1 }
+    headers.forEach((header, idx) => {
+      row[header] = values[idx] || ''
+    })
+    rows.push(row)
+  }
+
+  return rows
+}
+
+function parseJSONText(text) {
+  try {
+    const data = JSON.parse(text)
+    if (!Array.isArray(data)) {
+      throw new Error('JSON must be an array of objects')
+    }
+
+    const rows = []
+    data.forEach((item, index) => {
+      if (typeof item !== 'object' || item === null) {
+        throw new Error(`Row ${index + 1} is not an object`)
+      }
+      if (!item.code) {
+        throw new Error(`Row ${index + 1} is missing "code" field`)
+      }
+
+      const row = { __index: index }
+      // Normalize field names to lowercase
+      Object.keys(item).forEach((key) => {
+        row[key.toLowerCase()] = String(item[key] || '')
+      })
+      rows.push(row)
+    })
+
+    return rows
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error('Invalid JSON format: ' + error.message)
+    }
+    throw error
+  }
+}
+
+async function handleFileUpload() {
+  if (!csvFile.value) {
+    csvPreview.value = []
+    csvImportResults.value = null
+    return
+  }
+
+  try {
+    // Ensure glazes are loaded for validation
+    const all = glazesStore.all?.value || []
+    if (!all.length) {
+      await glazesStore.refetch()
+    }
+
+    const text = await csvFile.value.text()
+    const fileName = csvFile.value.name.toLowerCase()
+
+    if (fileName.endsWith('.json')) {
+      csvPreview.value = parseJSONText(text)
+    } else {
+      csvPreview.value = parseCSVText(text)
+    }
+    csvImportResults.value = null
+  } catch (error) {
+    console.error('File parsing error:', error)
+    csvPreview.value = []
+    csvImportResults.value = {
+      success: 0,
+      failed: 0,
+      errors: [{ code: 'N/A', error: error.message || 'Failed to parse file' }],
+    }
+  }
+}
+
+async function parsePastedData() {
+  if (!pastedData.value.trim()) {
+    csvPreview.value = []
+    csvImportResults.value = null
+    return
+  }
+
+  try {
+    // Ensure glazes are loaded for validation
+    const all = glazesStore.all?.value || []
+    if (!all.length) {
+      await glazesStore.refetch()
+    }
+
+    if (importTab.value === 'json') {
+      csvPreview.value = parseJSONText(pastedData.value)
+    } else {
+      csvPreview.value = parseCSVText(pastedData.value)
+    }
+    csvImportResults.value = null
+  } catch (error) {
+    console.error('Parsing error:', error)
+    csvPreview.value = []
+    csvImportResults.value = {
+      success: 0,
+      failed: 0,
+      errors: [{ code: 'N/A', error: error.message || 'Failed to parse data' }],
+    }
+  }
+}
+
+async function importCSV() {
+  if (!csvPreview.value.length || !isAuthed.value) return
+
+  csvImporting.value = true
+  csvImportResults.value = null
+
+  try {
+    // Ensure glazes are loaded
+    const all = glazesStore.all?.value || []
+    if (!all.length) {
+      await glazesStore.refetch()
+    }
+
+    const results = await inventoryStore.bulkImportFromCSV(csvPreview.value, glazeCodeMap.value)
+    csvImportResults.value = results
+
+    if (results.success > 0) {
+      // Refresh the inventory
+      await inventoryStore.refetch()
+    }
+  } catch (error) {
+    console.error('CSV import error:', error)
+    csvImportResults.value = {
+      success: 0,
+      failed: csvPreview.value.length,
+      errors: [{ code: 'N/A', error: error instanceof Error ? error.message : 'Import failed' }],
+    }
+  } finally {
+    csvImporting.value = false
+  }
+}
+
+function closeCsvDialog() {
+  csvDialog.value = false
+  csvFile.value = null
+  pastedData.value = ''
+  csvPreview.value = []
+  csvImportResults.value = null
+  importTab.value = 'file'
 }
 </script>
 

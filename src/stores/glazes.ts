@@ -17,6 +17,7 @@ const GLAZES = gql`
       finish
       name
       notes
+      pages
       id
       series
     }
@@ -33,6 +34,7 @@ const RECENT_GLAZES = gql`
       finish
       name
       notes
+      pages
       id
       series
     }
@@ -51,6 +53,24 @@ const CREATE_GLAZE = gql`
       finish
       name
       notes
+      pages
+      id
+      series
+    }
+  }
+`
+const UPDATE_GLAZE = gql`
+  mutation UpdateGlaze($id: Int!, $changes: potterbase_glaze_set_input!) {
+    update_potterbase_glaze_by_pk(pk_columns: { id: $id }, _set: $changes) {
+      brand
+      code
+      color
+      cone
+      display_name
+      finish
+      name
+      notes
+      pages
       id
       series
     }
@@ -60,6 +80,7 @@ export function useGlazesStore() {
   const { result: allResult, refetch: refetchAll } = useQuery(GLAZES)
   const { result: recentResult, refetch: refetchRecent } = useQuery(RECENT_GLAZES)
   const { mutate: createGlazeMutation } = useMutation(CREATE_GLAZE)
+  const { mutate: updateGlazeMutation } = useMutation(UPDATE_GLAZE)
 
   const options = computed(() =>
     (allResult.value?.potterbase_glaze || []).map((g: any) => ({
@@ -70,17 +91,25 @@ export function useGlazesStore() {
   )
 
   const recent = computed(() => recentResult.value?.potterbase_glaze || [])
+  const all = computed(() => allResult.value?.potterbase_glaze || [])
 
   async function createGlaze(obj: any) {
     const { data } = await createGlazeMutation({ object: obj })
     return data?.insert_potterbase_glaze_one
   }
 
+  async function updateGlaze(id: number, changes: any) {
+    const { data } = await updateGlazeMutation({ id, changes })
+    return data?.update_potterbase_glaze_by_pk
+  }
+
   return {
     options,
     recent,
+    all,
     refetch: refetchAll,
     refetchRecent,
     createGlaze,
+    updateGlaze,
   }
 }

@@ -13,6 +13,13 @@ array_relationships:
         table:
           name: profile_glaze
           schema: potterbase
+  - name: piece_likes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: piece_likes
+          schema: potterbase
 insert_permissions:
   - role: user
     permission:

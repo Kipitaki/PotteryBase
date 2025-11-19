@@ -25,15 +25,6 @@ const CLASS_GLAZES = gql`
         display_name
         finish
       }
-      potterbase_piece_glazes(
-        where: { piece: { owner_id: { _eq: $profileId } } }
-        order_by: { piece_id: asc }
-      ) {
-        piece {
-          id
-          title
-        }
-      }
     }
   }
 `
@@ -59,7 +50,10 @@ const MY_GLAZES = gql`
         cone
         display_name
         finish
-        piece_glazes(order_by: { piece_id: asc }) {
+        piece_glazes(
+          where: { piece: { owner_id: { _eq: $profileId } } }
+          order_by: { piece_id: asc }
+        ) {
           piece {
             id
             title
@@ -184,6 +178,61 @@ export function useGlazeInventoryStore() {
     await refetch()
   }
 
+  async function bulkImportFromCSV(
+    csvData: Array<Record<string, string>>,
+    glazeCodeMap: Map<string, number>,
+  ) {
+    if (!profileId.value) {
+      throw new Error('User must be signed in to import glazes')
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ code: string; error: string }>,
+    }
+
+    for (const row of csvData) {
+      const code = row.code?.trim()
+      if (!code) {
+        results.failed++
+        results.errors.push({ code: 'N/A', error: 'Missing code column' })
+        continue
+      }
+
+      const glazeId = glazeCodeMap.get(code)
+      if (!glazeId) {
+        results.failed++
+        results.errors.push({ code, error: `Glaze with code "${code}" not found` })
+        continue
+      }
+
+      try {
+        await upsertMut({
+          object: {
+            glaze_id: glazeId,
+            profile_id: profileId.value,
+            quantity: row.quantity ? parseFloat(row.quantity) : null,
+            unit: row.unit?.trim() || null,
+            location: row.location?.trim() || null,
+            status: row.status?.trim() || 'available',
+            notes: row.notes?.trim() || null,
+          },
+        })
+        results.success++
+      } catch (error) {
+        results.failed++
+        results.errors.push({
+          code,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+    await refetch()
+    return results
+  }
+
   return {
     classGlazes,
     myGlazes,
@@ -193,5 +242,6 @@ export function useGlazeInventoryStore() {
     upsertMyGlaze,
     updateMyGlaze,
     removeMyGlaze,
+    bulkImportFromCSV,
   }
 }
