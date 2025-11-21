@@ -178,7 +178,7 @@
         <q-chip
           v-for="g in piece.piece_glazes"
           :key="g.id"
-          color="teal-3"
+          :color="getGlazeColor(g.glaze?.color)"
           text-color="black"
           dense
           :size="$q.screen.lt.md ? 'xs' : 'sm'"
@@ -467,6 +467,76 @@ async function deletePiece() {
     console.error('Error deleting piece:', error)
     // You could add a notification here if you have a notification system
   }
+}
+
+/* ============================================================
+   GLAZE COLOR MAPPING
+   ============================================================ */
+function getGlazeColor(colorString) {
+  if (!colorString) return 'teal-3' // Default fallback
+
+  const color = colorString.toLowerCase().trim()
+
+  // Map common color names to Quasar colors
+  const colorMap = {
+    // Reds
+    red: 'red-3',
+    crimson: 'red-4',
+    maroon: 'red-6',
+    pink: 'pink-3',
+    rose: 'pink-4',
+    // Oranges
+    orange: 'orange-3',
+    coral: 'orange-4',
+    peach: 'orange-2',
+    // Yellows
+    yellow: 'yellow-3',
+    gold: 'yellow-4',
+    amber: 'yellow-5',
+    // Greens
+    green: 'green-3',
+    emerald: 'green-4',
+    lime: 'lime-3',
+    olive: 'green-5',
+    // Blues
+    blue: 'blue-3',
+    navy: 'blue-6',
+    sky: 'blue-2',
+    cyan: 'cyan-3',
+    teal: 'teal-3',
+    // Purples
+    purple: 'purple-3',
+    violet: 'purple-4',
+    lavender: 'purple-2',
+    // Browns
+    brown: 'brown-3',
+    tan: 'brown-2',
+    beige: 'brown-1',
+    // Grays/Blacks/Whites
+    black: 'grey-9',
+    white: 'grey-1',
+    gray: 'grey-4',
+    grey: 'grey-4',
+    silver: 'grey-5',
+    // Multi-color or special
+    clear: 'grey-2',
+    transparent: 'grey-2',
+  }
+
+  // Direct match
+  if (colorMap[color]) {
+    return colorMap[color]
+  }
+
+  // Partial matches (e.g., "dark blue", "light green")
+  for (const [key, value] of Object.entries(colorMap)) {
+    if (color.includes(key)) {
+      return value
+    }
+  }
+
+  // If no match found, return default
+  return 'teal-3'
 }
 </script>
 
