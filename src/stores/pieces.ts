@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import gql from 'graphql-tag'
 import { provideApolloClient, useQuery, useMutation } from '@vue/apollo-composable'
-import { apolloClient } from 'boot/apollo'
+import { apolloClient } from 'boot/nhost'
 import { nhost } from 'boot/nhost'
 
 provideApolloClient(apolloClient)
@@ -22,6 +22,9 @@ const PIECES = gql`
       created_at
       updated_at
       visibility
+      price
+      is_for_sale
+      in_stock
 
       # 👇 new
       profile {
@@ -116,6 +119,9 @@ const PIECE_BY_ID = gql`
       visibility
       created_at
       updated_at
+      price
+      is_for_sale
+      in_stock
 
       # 👇 new
       profile {
@@ -202,7 +208,9 @@ const PIECE_BY_ID = gql`
 `
 
 async function getPieceById(id: number) {
-  const { data } = await apolloClient.query({
+  // apolloClient is a Promise, so we need to await it first
+  const client = await apolloClient
+  const { data } = await client.query({
     query: PIECE_BY_ID,
     variables: { id },
     fetchPolicy: 'network-only',

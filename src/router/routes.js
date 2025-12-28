@@ -54,6 +54,26 @@ const routes = [
         name: 'viewpiece',
         component: () => import('pages/ViewPiece.vue'),
       },
+      {
+        path: 'cart',
+        name: 'cart',
+        component: () => import('pages/CartPage.vue'),
+      },
+      {
+        path: 'checkout',
+        name: 'checkout',
+        component: () => import('pages/CheckoutPage.vue'),
+      },
+      {
+        path: 'shop/:slug?',
+        name: 'shop',
+        component: () => import('pages/ShopPage.vue'),
+      },
+      {
+        path: 'orders',
+        name: 'orders',
+        component: () => import('pages/OrderManagementPage.vue'),
+      },
     ],
   },
 

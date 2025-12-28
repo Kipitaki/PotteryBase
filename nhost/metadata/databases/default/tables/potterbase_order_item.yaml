@@ -1,45 +1,45 @@
 table:
-  name: piece_likes
+  name: order_item
   schema: potterbase
 object_relationships:
+  - name: order
+    using:
+      foreign_key_constraint_on: order_id
   - name: piece
     using:
       foreign_key_constraint_on: piece_id
-  - name: profile
-    using:
-      manual_configuration:
-        column_mapping:
-          user_id: id
-        insertion_order: null
-        remote_table:
-          name: profiles
-          schema: potterbase
 insert_permissions:
   - role: user
     permission:
       check: {}
       columns:
-        - id
+        - order_id
         - piece_id
-        - user_id
-        - created_at
+        - quantity
+        - price
+        - subtotal
     comment: ""
 select_permissions:
   - role: public
     permission:
       columns:
         - id
+        - order_id
         - piece_id
-        - user_id
-        - created_at
+        - quantity
+        - price
+        - subtotal
       filter: {}
-      allow_aggregations: true
+    comment: ""
   - role: user
     permission:
       columns:
         - id
+        - order_id
         - piece_id
-        - user_id
+        - quantity
+        - price
+        - subtotal
         - created_at
       filter: {}
       allow_aggregations: true

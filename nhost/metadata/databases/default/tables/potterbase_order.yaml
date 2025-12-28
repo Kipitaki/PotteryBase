@@ -1,0 +1,80 @@
+table:
+  name: order
+  schema: potterbase
+object_relationships:
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id
+array_relationships:
+  - name: order_items
+    using:
+      foreign_key_constraint_on:
+        column: order_id
+        table:
+          name: order_item
+          schema: potterbase
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      set:
+        user_id: X-Hasura-User-Id
+      columns:
+        - user_id
+        - order_number
+        - status
+        - subtotal
+        - tax_amount
+        - shipping_amount
+        - total
+        - shipping_method
+        - shipping_address
+        - square_payment_id
+        - square_order_id
+    comment: ""
+select_permissions:
+  - role: public
+    permission:
+      columns:
+        - id
+        - order_number
+        - status
+        - created_at
+      filter: {}
+    comment: Limited public access for order tracking
+  - role: user
+    permission:
+      columns:
+        - id
+        - user_id
+        - order_number
+        - status
+        - subtotal
+        - tax_amount
+        - shipping_amount
+        - total
+        - shipping_method
+        - shipping_address
+        - square_payment_id
+        - square_order_id
+        - created_at
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - status
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+    comment: Users can only update their own orders

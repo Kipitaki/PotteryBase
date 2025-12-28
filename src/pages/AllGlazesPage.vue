@@ -17,13 +17,7 @@
               color="primary"
               @click="importDialog = true"
             />
-            <q-btn
-              flat
-              icon="download"
-              label="Download CSV"
-              color="primary"
-              @click="downloadCSV"
-            />
+            <q-btn flat icon="download" label="Download CSV" color="primary" @click="downloadCSV" />
             <q-btn
               flat
               icon="arrow_back"
@@ -69,11 +63,7 @@
             @keyup.enter="saveEdit(props.row.id, 'code', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'code', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'code', props.value)">
             <span class="text-weight-medium">{{ props.value || '(no code)' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -92,11 +82,7 @@
             @keyup.enter="saveEdit(props.row.id, 'name', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'name', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'name', props.value)">
             <span>{{ props.value || '-' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -120,11 +106,7 @@
             @keyup.enter="saveEdit(props.row.id, 'brand', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'brand', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'brand', props.value)">
             <span>{{ props.value || '-' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -143,11 +125,7 @@
             @keyup.enter="saveEdit(props.row.id, 'color', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'color', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'color', props.value)">
             <span>{{ props.value || '-' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -167,11 +145,7 @@
             @keyup.enter="saveEdit(props.row.id, 'cone', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'cone', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'cone', props.value)">
             <span>{{ props.value || '-' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -259,32 +233,66 @@
             @keyup.enter="saveEdit(props.row.id, 'notes', editingValue)"
             @keyup.esc="cancelEdit"
           />
-          <div
-            v-else
-            class="editable-field"
-            @click="startEdit(props.row.id, 'notes', props.value)"
-          >
+          <div v-else class="editable-field" @click="startEdit(props.row.id, 'notes', props.value)">
             <span class="text-caption">{{ props.value || '-' }}</span>
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
         </q-td>
       </template>
 
+      <!-- <template v-slot:body-cell-test_tile_image="props">
+        <q-td :props="props">
+          <div class="row items-center justify-center q-gutter-xs">
+            <q-img
+              v-if="props.row.test_tile_image_url"
+              :src="props.row.test_tile_image_url"
+              style="max-width: 60px; max-height: 60px; border-radius: 4px"
+              class="cursor-pointer"
+              @click="openImageDialog(props.row.test_tile_image_url)"
+            />
+            <q-btn
+              v-else
+              flat
+              dense
+              round
+              icon="add_photo_alternate"
+              size="sm"
+              color="grey-6"
+              @click="openImageUploadDialog(props.row)"
+            />
+            <q-btn
+              v-if="props.row.test_tile_image_url"
+              flat
+              dense
+              round
+              icon="edit"
+              size="xs"
+              color="grey-6"
+              @click="openImageUploadDialog(props.row)"
+            />
+            <q-btn
+              v-if="props.row.test_tile_image_url"
+              flat
+              dense
+              round
+              icon="delete"
+              size="xs"
+              color="negative"
+              @click="deleteImage(props.row)"
+            />
+          </div>
+        </q-td>
+      </template> -->
+
       <template v-slot:body-cell-pages="props">
         <q-td :props="props">
-          <div
-            v-if="props.value"
-            class="editable-field"
-            @click="openPagesDialog(props.row)"
-          >
-            <span class="text-caption">{{ props.value.substring(0, 50) }}{{ props.value.length > 50 ? '...' : '' }}</span>
+          <div v-if="props.value" class="editable-field" @click="openPagesDialog(props.row)">
+            <span class="text-caption"
+              >{{ props.value.substring(0, 50) }}{{ props.value.length > 50 ? '...' : '' }}</span
+            >
             <q-icon name="edit" size="xs" class="q-ml-xs text-grey-5" />
           </div>
-          <div
-            v-else
-            class="editable-field"
-            @click="openPagesDialog(props.row)"
-          >
+          <div v-else class="editable-field" @click="openPagesDialog(props.row)">
             <span class="text-grey-6 text-caption">Click to add pages</span>
             <q-icon name="add" size="xs" class="q-ml-xs text-grey-5" />
           </div>
@@ -292,13 +300,74 @@
       </template>
     </q-table>
 
+    <!-- Image Upload Dialog -->
+    <!-- <q-dialog v-model="imageUploadDialog" persistent>
+      <q-card style="min-width: 400px">
+        <q-card-section>
+          <div class="text-h6">Upload Test Tile Image</div>
+          <div class="text-caption text-grey-7 q-mt-xs">
+            Upload an image of the test tile for
+            {{ uploadingImageGlaze?.name || uploadingImageGlaze?.code || 'this glaze' }}
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <q-file
+            v-model="imageFile"
+            label="Select image"
+            accept="image/*"
+            outlined
+            :disable="uploadingImage"
+          >
+            <template v-slot:prepend>
+              <q-icon name="attach_file" />
+            </template>
+          </q-file>
+          <div v-if="imageFile" class="q-mt-md">
+            <q-img
+              :src="imagePreviewUrl"
+              style="max-width: 300px; max-height: 300px"
+              class="q-mt-sm"
+            />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" :disable="uploadingImage" @click="closeImageUploadDialog" />
+          <q-btn
+            color="primary"
+            label="Upload"
+            :loading="uploadingImage"
+            :disable="!imageFile || uploadingImage"
+            @click="uploadImage"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog> -->
+
+    <!-- Image View Dialog -->
+    <!-- <q-dialog v-model="imageViewDialog" maximized>
+      <q-card>
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Test Tile Image</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+        <q-card-section class="flex flex-center">
+          <q-img :src="viewingImageUrl" style="max-width: 90vw; max-height: 90vh" fit="contain" />
+        </q-card-section>
+      </q-card>
+    </q-dialog> -->
+
     <!-- Pages Edit Dialog -->
     <q-dialog v-model="pagesDialog" persistent>
       <q-card style="min-width: 600px; max-width: 800px">
         <q-card-section>
           <div class="text-h6">Edit Pages</div>
           <div class="text-caption text-grey-7 q-mt-sm">
-            {{ editingPagesGlaze ? `${editingPagesGlaze.code || ''} - ${editingPagesGlaze.name || ''}` : '' }}
+            {{
+              editingPagesGlaze
+                ? `${editingPagesGlaze.code || ''} - ${editingPagesGlaze.name || ''}`
+                : ''
+            }}
           </div>
         </q-card-section>
 
@@ -443,10 +512,7 @@
           </div>
 
           <div v-if="importResults" class="q-mt-md">
-            <q-banner
-              :class="importResults.failed > 0 ? 'bg-warning' : 'bg-positive'"
-              rounded
-            >
+            <q-banner :class="importResults.failed > 0 ? 'bg-warning' : 'bg-positive'" rounded>
               <template v-slot:avatar>
                 <q-icon
                   :name="importResults.failed > 0 ? 'warning' : 'check_circle'"
@@ -494,6 +560,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useGlazesStore } from 'src/stores/glazes'
+// import { nhost } from 'boot/nhost'
 
 const $q = useQuasar()
 const glazesStore = useGlazesStore()
@@ -508,6 +575,15 @@ const isLoading = ref(false)
 const pagesDialog = ref(false)
 const editingPagesGlaze = ref(null)
 const pagesValue = ref('')
+
+// Image upload
+// const imageUploadDialog = ref(false)
+// const uploadingImageGlaze = ref(null)
+// const imageFile = ref(null)
+// const imagePreviewUrl = ref(null)
+// const uploadingImage = ref(false)
+// const imageViewDialog = ref(false)
+// const viewingImageUrl = ref('')
 
 // CSV Import
 const importDialog = ref(false)
@@ -532,7 +608,20 @@ const columns = [
   { name: 'cone', label: 'Cone', field: 'cone', align: 'center', sortable: true },
   { name: 'series', label: 'Series', field: 'series', align: 'left', sortable: true },
   { name: 'finish', label: 'Finish', field: 'finish', align: 'left', sortable: true },
-  { name: 'display_name', label: 'Display Name', field: 'display_name', align: 'left', sortable: true },
+  // {
+  //   name: 'test_tile_image',
+  //   label: 'Test Tile',
+  //   field: 'test_tile_image_url',
+  //   align: 'center',
+  //   sortable: false,
+  // },
+  {
+    name: 'display_name',
+    label: 'Display Name',
+    field: 'display_name',
+    align: 'left',
+    sortable: true,
+  },
   { name: 'notes', label: 'Notes', field: 'notes', align: 'left', sortable: false },
   { name: 'pages', label: 'Pages', field: 'pages', align: 'left', sortable: false },
 ]
@@ -639,7 +728,7 @@ async function saveEdit(id, field, value) {
 
 function downloadCSV() {
   const glazes = filteredGlazes.value || []
-  
+
   if (glazes.length === 0) {
     $q.notify({
       type: 'warning',
@@ -662,6 +751,7 @@ function downloadCSV() {
     'display_name',
     'notes',
     'pages',
+    // 'test_tile_image_url',
   ]
 
   // Escape CSV values (handle commas, quotes, newlines)
@@ -692,15 +782,15 @@ function downloadCSV() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
-  
+
   link.setAttribute('href', url)
   link.setAttribute('download', `glazes_${new Date().toISOString().split('T')[0]}.csv`)
   link.style.visibility = 'hidden'
-  
+
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  
+
   // Clean up the URL object
   URL.revokeObjectURL(url)
 
@@ -776,7 +866,7 @@ function parseCSVText(text) {
     headers.forEach((header, idx) => {
       row[header] = values[idx] || ''
     })
-    
+
     // Check for duplicates
     const code = row.code?.trim()
     if (code) {
@@ -791,7 +881,7 @@ function parseCSVText(text) {
     } else {
       row.__isDuplicate = false
     }
-    
+
     rows.push(row)
   }
 
@@ -862,7 +952,7 @@ async function importGlazes() {
   try {
     // Ensure glazes are loaded and refresh the map
     await glazesStore.refetch()
-    
+
     // Rebuild the code map to ensure it's current
     const allGlazes = glazesStore.all?.value || []
     const codeMap = new Map()
@@ -892,7 +982,7 @@ async function importGlazes() {
       }
 
       const codeLower = code.toLowerCase()
-      
+
       // Check if we've already processed this code in this batch
       if (processedInBatch.has(codeLower)) {
         // This is a duplicate within the CSV - update the existing one
@@ -912,7 +1002,7 @@ async function importGlazes() {
           if (row.finish !== undefined) glazeData.finish = row.finish?.trim() || null
           if (row.notes !== undefined) glazeData.notes = row.notes?.trim() || null
           if (row.pages !== undefined) glazeData.pages = row.pages?.trim() || null
-          
+
           try {
             await glazesStore.updateGlaze(existingInBatch.id, glazeData)
             results.success++
@@ -941,12 +1031,12 @@ async function importGlazes() {
 
       // Check if it exists in the database
       const existing = codeMap.get(codeLower)
-      
+
       // Debug: Log if we're about to create but code might exist
       if (!existing && codeMap.size > 0) {
         // Check if code exists with different case/whitespace
         const allCodes = Array.from(codeMap.keys())
-        const matchingCode = allCodes.find(c => c === codeLower)
+        const matchingCode = allCodes.find((c) => c === codeLower)
         if (!matchingCode) {
           // Check for similar codes (debugging)
           console.log(`[Import] Code "${code}" not found in map. Map has ${codeMap.size} entries.`)
@@ -994,8 +1084,13 @@ async function importGlazes() {
           } catch (createError) {
             // If create fails with uniqueness violation, the glaze might exist
             // Try to find it again and update instead
-            const errorMsg = createError instanceof Error ? createError.message : String(createError)
-            if (errorMsg.includes('unique') || errorMsg.includes('duplicate') || errorMsg.includes('violates')) {
+            const errorMsg =
+              createError instanceof Error ? createError.message : String(createError)
+            if (
+              errorMsg.includes('unique') ||
+              errorMsg.includes('duplicate') ||
+              errorMsg.includes('violates')
+            ) {
               // Refetch glazes and check again
               await glazesStore.refetch()
               const refreshedGlazes = glazesStore.all?.value || []
@@ -1100,6 +1195,118 @@ async function savePages() {
   }
 }
 
+// Image upload functions
+// function openImageUploadDialog(glaze) {
+//   uploadingImageGlaze.value = glaze
+//   imageFile.value = null
+//   imagePreviewUrl.value = null
+//   imageUploadDialog.value = true
+// }
+
+// function closeImageUploadDialog() {
+//   imageUploadDialog.value = false
+//   uploadingImageGlaze.value = null
+//   imageFile.value = null
+//   imagePreviewUrl.value = null
+// }
+
+// Watch for file selection to show preview
+// watch(imageFile, (newFile) => {
+//   if (newFile) {
+//     const reader = new FileReader()
+//     reader.onload = (e) => {
+//       imagePreviewUrl.value = e.target.result
+//     }
+//     reader.readAsDataURL(newFile)
+//   } else {
+//     imagePreviewUrl.value = null
+//   }
+// })
+
+// async function uploadImage() {
+//   if (!imageFile.value || !uploadingImageGlaze.value) return
+
+//   uploadingImage.value = true
+//   try {
+//     // Upload file to storage
+//     const { fileMetadata, error } = await nhost.storage.upload({
+//       file: imageFile.value,
+//       bucketId: 'default',
+//       options: { public: true },
+//     })
+
+//     if (error) {
+//       throw error
+//     }
+
+//     const url = nhost.storage.getPublicUrl({ fileId: fileMetadata.id })
+
+//     // Update glaze with image URL
+//     // await glazesStore.updateGlaze(uploadingImageGlaze.value.id, {
+//     //   test_tile_image_url: url,
+//     // })
+
+//     await glazesStore.refetch()
+
+//     $q.notify({
+//       type: 'positive',
+//       message: 'Test tile image uploaded successfully',
+//       position: 'top',
+//       timeout: 2000,
+//     })
+
+//     closeImageUploadDialog()
+//   } catch (error) {
+//     console.error('Error uploading image:', error)
+//     $q.notify({
+//       type: 'negative',
+//       message: `Failed to upload image: ${error.message || 'Unknown error'}`,
+//       position: 'top',
+//       timeout: 3000,
+//     })
+//   } finally {
+//     uploadingImage.value = false
+//   }
+// }
+
+// async function deleteImage(glaze) {
+//   $q.dialog({
+//     title: 'Delete Image',
+//     message: `Are you sure you want to delete the test tile image for ${glaze.name || glaze.code}?`,
+//     cancel: true,
+//     persistent: true,
+//   }).onOk(async () => {
+//     isLoading.value = true
+//     try {
+//       // await glazesStore.updateGlaze(glaze.id, {
+//       //   test_tile_image_url: null,
+//       // })
+//       await glazesStore.refetch()
+//       $q.notify({
+//         type: 'positive',
+//         message: 'Image deleted successfully',
+//         position: 'top',
+//         timeout: 2000,
+//       })
+//     } catch (error) {
+//       console.error('Error deleting image:', error)
+//       $q.notify({
+//         type: 'negative',
+//         message: `Failed to delete image: ${error.message || 'Unknown error'}`,
+//         position: 'top',
+//         timeout: 3000,
+//       })
+//     } finally {
+//       isLoading.value = false
+//     }
+//   })
+// }
+
+// function openImageDialog(url) {
+//   viewingImageUrl.value = url
+//   imageViewDialog.value = true
+// }
+
 onMounted(async () => {
   isLoading.value = true
   try {
@@ -1145,4 +1352,3 @@ onMounted(async () => {
   opacity: 1;
 }
 </style>
-

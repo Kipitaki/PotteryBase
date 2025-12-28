@@ -15,9 +15,11 @@ array_relationships:
           schema: potterbase
   - name: piece_likes
     using:
-      foreign_key_constraint_on:
-        column: user_id
-        table:
+      manual_configuration:
+        column_mapping:
+          id: user_id
+        insertion_order: null
+        remote_table:
           name: piece_likes
           schema: potterbase
 insert_permissions:
@@ -31,6 +33,9 @@ insert_permissions:
         - id
         - unit_preference
         - updated_at
+        - shop_enabled
+        - shop_slug
+        - shop_name
     comment: ""
 select_permissions:
   - role: public
@@ -44,6 +49,9 @@ select_permissions:
         - created_at
         - updated_at
         - id
+        - shop_enabled
+        - shop_slug
+        - shop_name
       filter: {}
     comment: ""
   - role: user
@@ -57,6 +65,9 @@ select_permissions:
         - created_at
         - updated_at
         - id
+        - shop_enabled
+        - shop_slug
+        - shop_name
       filter: {}
     comment: ""
 update_permissions:
@@ -69,6 +80,9 @@ update_permissions:
         - id
         - unit_preference
         - updated_at
+        - shop_enabled
+        - shop_slug
+        - shop_name
       filter: {}
       check: {}
     comment: ""

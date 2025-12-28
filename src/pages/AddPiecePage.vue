@@ -86,6 +86,50 @@
         </div>
       </div>
 
+      <!-- For Sale Section -->
+      <q-card class="q-mt-md">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">For Sale</div>
+          <div class="row q-col-gutter-md">
+            <div class="col-12">
+              <q-toggle
+                v-model="form.is_for_sale"
+                label="Offer this piece for sale"
+                color="primary"
+              />
+            </div>
+            <div v-if="form.is_for_sale" class="col-12 col-md-6">
+              <q-input
+                v-model.number="form.price"
+                type="number"
+                label="Price ($)"
+                prefix="$"
+                outlined
+                :rules="[
+                  (val) =>
+                    val === null ||
+                    val === '' ||
+                    (val >= 0 && val <= 10000) ||
+                    'Price must be between $0 and $10,000',
+                ]"
+                hint="Enter the price in dollars"
+              />
+            </div>
+            <div v-if="form.is_for_sale" class="col-12 col-md-6">
+              <q-toggle
+                v-model="form.in_stock"
+                label="In stock"
+                color="positive"
+                :disable="!form.is_for_sale"
+              />
+              <div class="text-caption text-grey-6 q-mt-xs">
+                Uncheck if this piece is sold or unavailable
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
       <!-- Actions -->
       <div class="row items-center justify-between q-gutter-sm q-mt-md q-mb-xl">
         <div>
@@ -180,6 +224,24 @@ async function autoSavePiece(changes) {
 
   try {
     await piecesStore.updatePiece(currentPieceId.value, changes)
+    // Reload the piece to get updated data and refresh form
+    const updatedPiece = await piecesStore.getPieceById(currentPieceId.value)
+    if (updatedPiece) {
+      piece.value = updatedPiece
+      // Update form fields that were just saved
+      if (changes.visibility !== undefined) {
+        form.share = updatedPiece.visibility || 'Private'
+      }
+      if (changes.price !== undefined) {
+        form.price = updatedPiece.price || null
+      }
+      if (changes.is_for_sale !== undefined) {
+        form.is_for_sale = updatedPiece.is_for_sale || false
+      }
+      if (changes.in_stock !== undefined) {
+        form.in_stock = updatedPiece.in_stock !== undefined ? updatedPiece.in_stock : true
+      }
+    }
     showAutoSaveToast()
   } catch (error) {
     console.error('[AddPiece] Auto-save failed:', error)
@@ -201,7 +263,7 @@ function emptyStageDates() {
 const form = reactive({
   title: '',
   whatisit: '',
-  share: 'private',
+  share: 'Private',
   photos: [],
   stageLocation: '',
   stageDates: emptyStageDates(),
@@ -211,14 +273,20 @@ const form = reactive({
   glazes: [],
   firings: [],
   notes: '',
+  price: null,
+  is_for_sale: false,
+  in_stock: true,
 })
 
 /* ---------- Hydrate form ---------- */
 function hydrateForm(piece) {
   form.title = piece.title
   form.whatisit = piece.whatisit || ''
-  form.share = piece.visibility || 'private'
+  form.share = piece.visibility || 'Private'
   form.notes = piece.notes || ''
+  form.price = piece.price || null
+  form.is_for_sale = piece.is_for_sale || false
+  form.in_stock = piece.in_stock !== undefined ? piece.in_stock : true
 
   form.clays =
     piece.piece_clays?.map((c) => ({
@@ -313,7 +381,7 @@ function hydrateForm(piece) {
 const piece = ref(null)
 const localStageHistories = ref([])
 
-onMounted(async () => {
+async function loadPiece() {
   if (isEdit.value && editId.value) {
     isHydrating.value = true
     const loadedPiece = await piecesStore.getPieceById(editId.value)
@@ -326,12 +394,18 @@ onMounted(async () => {
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
     isHydrating.value = false
+  }
+}
+
+onMounted(async () => {
+  if (isEdit.value && editId.value) {
+    await loadPiece()
   } else {
     // 👇 NEW auto-create logic
     const randomName = nameGen.getRandomName()
     const created = await piecesStore.createPiece({
       title: randomName,
-      visibility: 'private',
+      visibility: 'Private',
       notes: '',
     })
     piece.value = created
@@ -356,6 +430,17 @@ onMounted(async () => {
 
   resetDirtyBaseline()
 })
+
+// Watch for route changes to reload piece when navigating back to edit
+watch(
+  () => route.query.id,
+  async (newId, oldId) => {
+    if (newId && newId !== oldId && isEdit.value) {
+      await loadPiece()
+      resetDirtyBaseline()
+    }
+  },
+)
 
 /* ---------- Auto-save watchers ---------- */
 // Flag to prevent auto-save during initial hydration
@@ -413,8 +498,54 @@ watch(
     if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
     if (newShare === oldShare) return
 
-    autoSavePiece({ visibility: newShare })
+    autoSavePiece({ visibility: newShare || 'Private' })
   },
+)
+
+// Auto-set visibility to Public when marking for sale
+watch(
+  () => form.is_for_sale,
+  (newIsForSale, oldIsForSale) => {
+    // Skip during hydration
+    if (isHydrating.value) return
+
+    // When marking for sale, automatically set visibility to Public
+    if (newIsForSale && !oldIsForSale && form.share !== 'Public') {
+      form.share = 'Public'
+    }
+  },
+)
+
+// Auto-save price and sale status changes
+let saleDebounce = null
+watch(
+  () => [form.price, form.is_for_sale, form.in_stock, form.share],
+  (
+    [newPrice, newIsForSale, newInStock, newShare],
+    [oldPrice, oldIsForSale, oldInStock, oldShare],
+  ) => {
+    if (!isEdit.value || !currentPieceId.value || isHydrating.value) return
+    if (
+      newPrice === oldPrice &&
+      newIsForSale === oldIsForSale &&
+      newInStock === oldInStock &&
+      newShare === oldShare
+    )
+      return
+
+    clearTimeout(saleDebounce)
+    saleDebounce = setTimeout(() => {
+      // If marking for sale, ensure visibility is Public
+      const visibility = newIsForSale ? 'Public' : newShare
+      autoSavePiece({
+        price: newPrice || null,
+        is_for_sale: newIsForSale || false,
+        in_stock: newIsForSale ? (newInStock !== undefined ? newInStock : true) : false,
+        visibility: visibility,
+      })
+    }, 1000) // 1 second debounce
+  },
+  { deep: true },
 )
 
 // Auto-save stage changes
@@ -675,6 +806,24 @@ async function onSave() {
   if (!form.title || form.title.trim() === '') {
     form.title = nameGen.getRandomName()
     await piecesStore.updatePiece(pieceId, { title: form.title })
+  }
+
+  // Save price and sale status
+  // If marking for sale, ensure visibility is Public
+  const visibility = form.is_for_sale ? 'Public' : form.share
+
+  await piecesStore.updatePiece(pieceId, {
+    price: form.price || null,
+    is_for_sale: form.is_for_sale || false,
+    in_stock: form.is_for_sale ? (form.in_stock !== undefined ? form.in_stock : true) : false,
+    visibility: visibility,
+  })
+
+  // Reload the piece to get updated data
+  const updatedPiece = await piecesStore.getPieceById(pieceId)
+  if (updatedPiece) {
+    piece.value = updatedPiece
+    hydrateForm(updatedPiece)
   }
 
   // 🔹 Save clays

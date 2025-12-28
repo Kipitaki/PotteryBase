@@ -1,0 +1,70 @@
+table:
+  name: shipping_address
+  schema: potterbase
+object_relationships:
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      set:
+        user_id: X-Hasura-User-Id
+      columns:
+        - user_id
+        - name
+        - street_address
+        - city
+        - state
+        - zip_code
+        - phone
+        - is_default
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - user_id
+        - name
+        - street_address
+        - city
+        - state
+        - zip_code
+        - phone
+        - is_default
+        - created_at
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - name
+        - street_address
+        - city
+        - state
+        - zip_code
+        - phone
+        - is_default
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+    comment: ""

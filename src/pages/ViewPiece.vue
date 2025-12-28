@@ -9,6 +9,39 @@
       readonly
     />
 
+    <!-- For Sale Section -->
+    <q-card v-if="isForSale" class="q-mb-md" flat bordered>
+      <q-card-section>
+        <div class="row items-center justify-between">
+          <div>
+            <div class="text-h5 text-primary">${{ form.piece?.price?.toFixed(2) || '0.00' }}</div>
+            <div class="text-caption text-grey-6">
+              <q-chip
+                v-if="form.piece?.in_stock"
+                color="positive"
+                text-color="white"
+                dense
+                size="sm"
+              >
+                In Stock
+              </q-chip>
+              <q-chip v-else color="negative" text-color="white" dense size="sm">
+                Out of Stock
+              </q-chip>
+            </div>
+          </div>
+          <q-btn
+            v-if="!isOwner && form.piece?.in_stock"
+            color="primary"
+            label="Add to Cart"
+            icon="shopping_cart"
+            size="md"
+            @click="handleAddToCart"
+          />
+        </div>
+      </q-card-section>
+    </q-card>
+
     <!-- Notes -->
     <div class="row q-col-gutter-md items-start q-mb-md">
       <div class="col-12 col-md-6">
@@ -218,22 +251,58 @@
 <script setup>
 import { reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
 
 import PieceHeaderBar from 'src/components/PieceHeaderBar.vue'
 import SectionCard from 'src/components/SectionCard.vue'
 import { usePiecesStore } from 'src/stores/pieces'
 import { useProfileStore } from 'src/stores/profile'
+import { useCartStore } from 'src/stores/cart'
 import { nhost } from 'boot/nhost'
 
 const piecesStore = usePiecesStore()
 const profileStore = useProfileStore()
+const cartStore = useCartStore()
 const route = useRoute()
+const $q = useQuasar()
 
 // Ownership check
 const isOwner = computed(() => {
   const user = nhost.auth.getUser()
   return form.piece?.owner_id && user?.id === form.piece.owner_id
 })
+
+// For Sale check
+const isForSale = computed(() => form.piece?.is_for_sale === true)
+
+// Add to Cart
+async function handleAddToCart() {
+  if (!nhost.auth.isAuthenticated()) {
+    $q.notify({
+      type: 'warning',
+      message: 'Please sign in to add items to cart',
+      position: 'top',
+    })
+    return
+  }
+
+  try {
+    await cartStore.addToCart(form.piece.id, 1)
+    $q.notify({
+      type: 'positive',
+      message: 'Added to cart',
+      position: 'top',
+      icon: 'shopping_cart',
+    })
+  } catch (error) {
+    console.error('Error adding to cart:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to add to cart',
+      position: 'top',
+    })
+  }
+}
 
 // Image dialog
 const imageDialog = reactive({

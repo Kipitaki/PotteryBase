@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  graphql:
+    ports:
+      - '1337:8080'
+  traefik:
+    ports:
+      - '80:80'
+      - '443:443'

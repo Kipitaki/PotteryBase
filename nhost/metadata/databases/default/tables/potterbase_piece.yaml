@@ -12,6 +12,20 @@ object_relationships:
           name: profiles
           schema: potterbase
 array_relationships:
+  - name: carts
+    using:
+      foreign_key_constraint_on:
+        column: piece_id
+        table:
+          name: cart
+          schema: potterbase
+  - name: order_items
+    using:
+      foreign_key_constraint_on:
+        column: piece_id
+        table:
+          name: order_item
+          schema: potterbase
   - name: piece_clays
     using:
       foreign_key_constraint_on:
@@ -55,6 +69,26 @@ array_relationships:
           name: piece_stage_history
           schema: potterbase
 insert_permissions:
+  - role: public
+    permission:
+      check: {}
+      columns:
+        - test_field
+        - id
+        - stageDates
+        - notes
+        - stage
+        - title
+        - visibility
+        - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
+    comment: ""
   - role: user
     permission:
       check:
@@ -66,45 +100,59 @@ insert_permissions:
       set:
         owner_id: x-hasura-User-Id
       columns:
-        - created_at
+        - test_field
         - id
+        - stageDates
         - notes
-        - owner_id
+        - stage
         - title
-        - updated_at
         - visibility
         - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
     comment: ""
 select_permissions:
   - role: anonymous
     permission:
       columns:
-        - id
-        - stageDates
-        - notes
-        - stage
-        - title
-        - visibility
         - created_at
-        - stageDate
-        - updated_at
+        - id
+        - in_stock
+        - is_for_sale
+        - notes
         - owner_id
+        - price
+        - stage
+        - stageDate
+        - stageDates
+        - title
+        - updated_at
+        - visibility
       filter: {}
     comment: ""
   - role: public
     permission:
       columns:
-        - created_at
+        - test_field
         - id
-        - notes
-        - owner_id
-        - stage
-        - stageDate
         - stageDates
+        - notes
+        - stage
         - title
-        - updated_at
         - visibility
         - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
       filter:
         visibility:
           _eq: Public
@@ -113,36 +161,95 @@ select_permissions:
   - role: user
     permission:
       columns:
-        - created_at
+        - test_field
         - id
+        - stageDates
         - notes
-        - owner_id
+        - stage
         - title
-        - updated_at
         - visibility
         - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
       filter:
         _or:
           - owner_id:
               _eq: X-Hasura-User-Id
           - visibility:
               _eq: Public
-    comment: ""
+      allow_aggregations: true
 update_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - test_field
+        - id
+        - stageDates
+        - notes
+        - stage
+        - title
+        - visibility
+        - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
+      filter: {}
+      check: null
+    comment: ""
+  - role: public
+    permission:
+      columns:
+        - test_field
+        - id
+        - stageDates
+        - notes
+        - stage
+        - title
+        - visibility
+        - whatisit
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
+      filter: {}
+      check: null
+    comment: ""
   - role: user
     permission:
       columns:
-        - created_at
-        - notes
-        - owner_id
-        - stage
-        - stageDate
+        - test_field
+        - id
         - stageDates
+        - notes
+        - stage
         - title
-        - updated_at
         - visibility
         - whatisit
-      filter: {}
+        - created_at
+        - stageDate
+        - updated_at
+        - owner_id
+        - price
+        - is_for_sale
+        - in_stock
+      filter:
+        _or:
+          - owner_id:
+              _eq: X-Hasura-User-Id
+          - visibility:
+              _eq: Public
       check:
         owner_id:
           _eq: X-Hasura-User-Id

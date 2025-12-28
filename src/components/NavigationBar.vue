@@ -71,6 +71,9 @@
           :class="activeTab === 'add' ? 'nav-btn-active' : ''"
         />
 
+        <!-- Cart -->
+        <cart-badge />
+
         <!-- User dropdown -->
         <user-dropdown />
       </div>
@@ -127,6 +130,9 @@
           :class="activeTab === 'add' ? 'nav-btn-active-mobile' : ''"
         />
 
+        <!-- Cart -->
+        <cart-badge />
+
         <!-- User dropdown -->
         <user-dropdown />
       </div>
@@ -138,6 +144,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserDropdown from 'src/components/UserDropdown.vue'
+import CartBadge from 'src/components/CartBadge.vue'
 
 const route = useRoute()
 const router = useRouter()

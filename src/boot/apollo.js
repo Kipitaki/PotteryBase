@@ -1,69 +1,15 @@
+// Re-export apolloClient from nhost.js to ensure all stores use the same instance
+// This prevents multiple Apollo clients with different configurations
+// The client in nhost.js is created asynchronously after auth is ready
+// Note: This is a Promise - stores should await it or use it in async contexts
+export { apolloClient } from './nhost'
+
 import { boot } from 'quasar/wrappers'
-import { createApolloClient } from '@nhost/apollo'
-import { DefaultApolloClient } from '@vue/apollo-composable'
-import { nhost } from './nhost'
 
-const apolloClient = createApolloClient({
-  nhost,
-  connectToDevTools: true,
-  cacheConfig: {
-    typePolicies: {
-      potterbase_piece: {
-        fields: {
-          piece_stage_histories: {
-            // eslint-disable-next-line no-unused-vars
-            merge(oldData = [], freshData) {
-              // Replace strategy: use fresh server data, ignore old cached data
-              return freshData
-            },
-          },
-          piece_glazes: {
-            // eslint-disable-next-line no-unused-vars
-            merge(oldData = [], freshData) {
-              // Replace strategy: use fresh server data, ignore old cached data
-              return freshData
-            },
-          },
-          piece_firings: {
-            // eslint-disable-next-line no-unused-vars
-            merge(oldData = [], freshData) {
-              // Replace strategy: use fresh server data, ignore old cached data
-              return freshData
-            },
-          },
-          piece_images: {
-            // eslint-disable-next-line no-unused-vars
-            merge(oldData = [], freshData) {
-              // Replace strategy: use fresh server data, ignore old cached data
-              return freshData
-            },
-          },
-          piece_clays: {
-            // eslint-disable-next-line no-unused-vars
-            merge(oldData = [], freshData) {
-              // Replace strategy: use fresh server data, ignore old cached data
-              return freshData
-            },
-          },
-        },
-      },
-    },
-  },
+// Note: Apollo client is created in nhost.js boot file (asynchronously after auth is ready)
+// This file just re-exports it for backward compatibility with stores
+// that import from 'boot/apollo'
+export default boot(async () => {
+  // Apollo client is already provided in nhost.js boot file
+  // No additional setup needed here
 })
-
-export default boot(({ app }) => {
-  app.provide(DefaultApolloClient, apolloClient)
-
-  // Reset Apollo when auth state changes
-  nhost.auth.onAuthStateChanged(async (event) => {
-    if (event === 'SIGNED_IN') {
-      try {
-        await apolloClient.resetStore()
-      } catch (err) {
-        console.error('[Apollo] resetStore failed:', err)
-      }
-    }
-  })
-})
-
-export { apolloClient }

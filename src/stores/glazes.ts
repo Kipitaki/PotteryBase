@@ -20,6 +20,7 @@ const GLAZES = gql`
       pages
       id
       series
+      # test_tile_image_url
     }
   }
 `
@@ -37,6 +38,7 @@ const RECENT_GLAZES = gql`
       pages
       id
       series
+      # test_tile_image_url
     }
   }
 `
@@ -56,6 +58,7 @@ const CREATE_GLAZE = gql`
       pages
       id
       series
+      # test_tile_image_url
     }
   }
 `
@@ -73,6 +76,7 @@ const UPDATE_GLAZE = gql`
       pages
       id
       series
+      # test_tile_image_url
     }
   }
 `

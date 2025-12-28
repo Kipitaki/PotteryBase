@@ -203,6 +203,25 @@
         </q-chip>
       </div>
     </q-card-section>
+
+    <!-- ---------------- For Sale Section ---------------- -->
+    <q-card-section v-if="isForSale" class="tight">
+      <div class="row items-center justify-between">
+        <div class="text-h6 text-primary">${{ piece.price?.toFixed(2) || '0.00' }}</div>
+        <q-btn
+          v-if="!isOwner && piece.in_stock"
+          color="primary"
+          label="Add to Cart"
+          icon="shopping_cart"
+          dense
+          size="sm"
+          @click.stop="handleAddToCart"
+        />
+        <q-chip v-else-if="!piece.in_stock" color="negative" text-color="white" dense size="sm">
+          Out of Stock
+        </q-chip>
+      </div>
+    </q-card-section>
   </q-card>
 
   <!-- Image Dialog -->
@@ -243,11 +262,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { nhost } from 'boot/nhost'
 import { usePiecesStore } from 'src/stores/pieces'
+import { useCartStore } from 'src/stores/cart'
 
 const router = useRouter()
 const piecesStore = usePiecesStore()
+const cartStore = useCartStore()
+const $q = useQuasar()
 
 const props = defineProps({
   piece: { type: Object, required: true },
@@ -264,6 +287,37 @@ const isOwner = computed(() => {
   const user = nhost.auth.getUser()
   return props.piece?.owner_id && user?.id === props.piece.owner_id
 })
+
+/* ---------- For Sale ---------- */
+const isForSale = computed(() => props.piece?.is_for_sale === true)
+
+async function handleAddToCart() {
+  if (!nhost.auth.isAuthenticated()) {
+    $q.notify({
+      type: 'warning',
+      message: 'Please sign in to add items to cart',
+      position: 'top',
+    })
+    return
+  }
+
+  try {
+    await cartStore.addToCart(props.piece.id, 1)
+    $q.notify({
+      type: 'positive',
+      message: 'Added to cart',
+      position: 'top',
+      icon: 'shopping_cart',
+    })
+  } catch (error) {
+    console.error('Error adding to cart:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to add to cart',
+      position: 'top',
+    })
+  }
+}
 
 /* ============================================================
    PHOTO HANDLING
