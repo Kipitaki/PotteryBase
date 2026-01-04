@@ -8,11 +8,12 @@ object_relationships:
   - name: profile
     using:
       manual_configuration:
-        remote_table:
-          schema: potterbase
-          name: profiles
         column_mapping:
           user_id: id
+        insertion_order: null
+        remote_table:
+          name: profiles
+          schema: potterbase
 insert_permissions:
   - role: user
     permission:
