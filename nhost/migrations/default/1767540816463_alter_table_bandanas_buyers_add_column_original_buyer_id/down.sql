@@ -1,0 +1,4 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- alter table "bandanas"."buyers" add column "original_buyer_id" text
+--  null;

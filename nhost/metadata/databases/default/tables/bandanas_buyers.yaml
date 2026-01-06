@@ -1,0 +1,18 @@
+table:
+  name: buyers
+  schema: potterbase
+array_relationships:
+  - name: buyer_addresses
+    using:
+      foreign_key_constraint_on:
+        column: buyer_id
+        table:
+          name: buyer_addresses
+          schema: potterbase
+  - name: orders
+    using:
+      foreign_key_constraint_on:
+        column: buyer_id
+        table:
+          name: orders
+          schema: potterbase

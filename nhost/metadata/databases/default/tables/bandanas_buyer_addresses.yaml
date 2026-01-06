@@ -1,0 +1,71 @@
+table:
+  name: buyer_addresses
+  schema: potterbase
+object_relationships:
+  - name: buyer
+    using:
+      foreign_key_constraint_on: buyer_id
+array_relationships:
+  - name: orders
+    using:
+      foreign_key_constraint_on:
+        column: address_id
+        table:
+          name: orders
+          schema: potterbase
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - id
+        - buyer_id
+        - address_line1
+        - address_line2
+        - city
+        - state
+        - postal_code
+        - country
+        - original_address_id
+        - created_at
+        - updated_at
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - buyer_id
+        - address_line1
+        - address_line2
+        - city
+        - state
+        - postal_code
+        - country
+        - original_address_id
+        - created_at
+        - updated_at
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - buyer_id
+        - address_line1
+        - address_line2
+        - city
+        - state
+        - postal_code
+        - country
+        - original_address_id
+        - updated_at
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter: {}
+    comment: ""
