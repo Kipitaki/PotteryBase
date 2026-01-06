@@ -11,6 +11,7 @@ WITH address_keys AS (
   SELECT 
     id,
     buyer_id,
+    created_at,
     LOWER(TRIM(address_line1)) || '|' || 
     LOWER(TRIM(COALESCE(address_line2, ''))) || '|' ||
     LOWER(TRIM(city)) || '|' ||
@@ -23,7 +24,7 @@ canonical_ids AS (
   SELECT 
     buyer_id,
     address_key,
-    MIN(id) as canonical_id
+    (array_agg(id ORDER BY created_at ASC))[1] as canonical_id
   FROM address_keys
   GROUP BY buyer_id, address_key
 )
