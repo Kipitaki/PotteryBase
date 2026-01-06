@@ -7,7 +7,7 @@ BEGIN
         AND table_name = 'piece' 
         AND column_name = 'price'
     ) THEN
-        ALTER TABLE potterbase.piece ADD COLUMN price DECIMAL(10,2);
-        COMMENT ON COLUMN potterbase.piece.price IS 'Price of the pottery piece in dollars';
+        ALTER TABLE bandanas.piece ADD COLUMN price DECIMAL(10,2);
+        COMMENT ON COLUMN bandanas.piece.price IS 'Price of the pottery piece in dollars';
     END IF;
 END $$;

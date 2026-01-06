@@ -1,3 +1,3 @@
-ALTER TABLE potterbase.piece_likes
+ALTER TABLE bandanas.piece_likes
   DROP CONSTRAINT IF EXISTS fk_piece_likes_user;
 

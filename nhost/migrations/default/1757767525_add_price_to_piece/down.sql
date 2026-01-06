@@ -1,2 +1,2 @@
 -- Rollback: Remove price column
-ALTER TABLE potterbase.piece DROP COLUMN IF EXISTS price;
+ALTER TABLE bandanas.piece DROP COLUMN IF EXISTS price;

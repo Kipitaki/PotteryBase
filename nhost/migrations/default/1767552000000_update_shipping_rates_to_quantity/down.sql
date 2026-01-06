@@ -1,7 +1,7 @@
 -- Revert to weight-based structure (not really reversible, but kept for migration consistency)
-DROP TABLE IF EXISTS potterbase.shipping_rates;
+DROP TABLE IF EXISTS bandanas.shipping_rates;
 
-CREATE TABLE potterbase.shipping_rates (
+CREATE TABLE bandanas.shipping_rates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   zone INTEGER NOT NULL CHECK (zone >= 1 AND zone <= 9),
   weight_min DECIMAL(10,2) NOT NULL CHECK (weight_min >= 0),

@@ -1,1 +1,1 @@
-ALTER TABLE potterbase.piece DROP COLUMN IF EXISTS test;
+ALTER TABLE bandanas.piece DROP COLUMN IF EXISTS test;

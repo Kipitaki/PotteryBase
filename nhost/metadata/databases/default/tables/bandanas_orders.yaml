@@ -1,6 +1,6 @@
 table:
   name: orders
-  schema: potterbase
+  schema: bandanas
 object_relationships:
   - name: buyer
     using:

@@ -1,5 +1,5 @@
 -- Create the set_updated_at() function for the potterbase schema if it doesn't exist
-CREATE OR REPLACE FUNCTION potterbase.set_updated_at()
+CREATE OR REPLACE FUNCTION bandanas.set_updated_at()
 RETURNS trigger AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -8,7 +8,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create buyers table
-CREATE TABLE potterbase.buyers (
+CREATE TABLE bandanas.buyers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
@@ -18,15 +18,15 @@ CREATE TABLE potterbase.buyers (
 );
 
 CREATE TRIGGER buyers_set_updated_at
-BEFORE UPDATE ON potterbase.buyers
+BEFORE UPDATE ON bandanas.buyers
 FOR EACH ROW
-EXECUTE FUNCTION potterbase.set_updated_at();
+EXECUTE FUNCTION bandanas.set_updated_at();
 
 -- Create buyer_addresses table
-CREATE TABLE potterbase.buyer_addresses (
+CREATE TABLE bandanas.buyer_addresses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   buyer_id UUID NOT NULL
-    REFERENCES potterbase.buyers(id)
+    REFERENCES bandanas.buyers(id)
     ON DELETE CASCADE,
   address_line1 TEXT NOT NULL,
   address_line2 TEXT,
@@ -39,12 +39,12 @@ CREATE TABLE potterbase.buyer_addresses (
 );
 
 CREATE TRIGGER buyer_addresses_set_updated_at
-BEFORE UPDATE ON potterbase.buyer_addresses
+BEFORE UPDATE ON bandanas.buyer_addresses
 FOR EACH ROW
-EXECUTE FUNCTION potterbase.set_updated_at();
+EXECUTE FUNCTION bandanas.set_updated_at();
 
 -- Create events table
-CREATE TABLE potterbase.events (
+CREATE TABLE bandanas.events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   year INTEGER NOT NULL,
@@ -56,21 +56,21 @@ CREATE TABLE potterbase.events (
 );
 
 CREATE TRIGGER events_set_updated_at
-BEFORE UPDATE ON potterbase.events
+BEFORE UPDATE ON bandanas.events
 FOR EACH ROW
-EXECUTE FUNCTION potterbase.set_updated_at();
+EXECUTE FUNCTION bandanas.set_updated_at();
 
 -- Create orders table
-CREATE TABLE potterbase.orders (
+CREATE TABLE bandanas.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   buyer_id UUID NOT NULL
-    REFERENCES potterbase.buyers(id)
+    REFERENCES bandanas.buyers(id)
     ON DELETE RESTRICT,
   address_id UUID
-    REFERENCES potterbase.buyer_addresses(id)
+    REFERENCES bandanas.buyer_addresses(id)
     ON DELETE SET NULL,
   event_id UUID NOT NULL
-    REFERENCES potterbase.events(id)
+    REFERENCES bandanas.events(id)
     ON DELETE RESTRICT,
   order_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   quantity INTEGER NOT NULL CHECK (quantity > 0),
@@ -83,7 +83,7 @@ CREATE TABLE potterbase.orders (
 );
 
 CREATE TRIGGER orders_set_updated_at
-BEFORE UPDATE ON potterbase.orders
+BEFORE UPDATE ON bandanas.orders
 FOR EACH ROW
-EXECUTE FUNCTION potterbase.set_updated_at();
+EXECUTE FUNCTION bandanas.set_updated_at();
 

@@ -1,5 +1,5 @@
 -- Remove the postage calculation fields from orders table
-ALTER TABLE potterbase.orders
+ALTER TABLE bandanas.orders
 DROP COLUMN IF EXISTS estimated_postage_cost,
 DROP COLUMN IF EXISTS weight,
 DROP COLUMN IF EXISTS height,

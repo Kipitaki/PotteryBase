@@ -18,7 +18,7 @@ WITH address_keys AS (
     LOWER(TRIM(COALESCE(state, ''))) || '|' ||
     TRIM(postal_code) || '|' ||
     LOWER(TRIM(COALESCE(country, 'US'))) as address_key
-  FROM potterbase.buyer_addresses
+  FROM bandanas.buyer_addresses
 ),
 canonical_ids AS (
   SELECT 
@@ -38,23 +38,23 @@ INNER JOIN canonical_ids ci ON
 WHERE ak.id != ci.canonical_id;
 
 -- Step 2: Update orders to point to canonical addresses (if they reference duplicates)
-UPDATE potterbase.orders o
+UPDATE bandanas.orders o
 SET address_id = ad.canonical_id
 FROM address_duplicates ad
 WHERE o.address_id = ad.duplicate_id;
 
 -- Step 3: Delete duplicate addresses
-DELETE FROM potterbase.buyer_addresses
+DELETE FROM bandanas.buyer_addresses
 WHERE id IN (SELECT duplicate_id FROM address_duplicates);
 
 -- Step 4: Fix orders where address doesn't belong to the buyer
 -- Set address_id to NULL if the address doesn't belong to the order's buyer
-UPDATE potterbase.orders o
+UPDATE bandanas.orders o
 SET address_id = NULL
 WHERE o.address_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
-    FROM potterbase.buyer_addresses ba
+    FROM bandanas.buyer_addresses ba
     WHERE ba.id = o.address_id
       AND ba.buyer_id = o.buyer_id
   );

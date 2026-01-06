@@ -1,4 +1,4 @@
 -- Remove fee column
-ALTER TABLE potterbase.orders
+ALTER TABLE bandanas.orders
 DROP COLUMN IF EXISTS fee;
 

@@ -7,14 +7,14 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM pg_constraint
-        WHERE conrelid = 'potterbase.piece_likes'::regclass
+        WHERE conrelid = 'bandanas.piece_likes'::regclass
           AND conname = 'fk_piece_likes_user_id'
           AND contype = 'f'
     ) THEN
-        ALTER TABLE potterbase.piece_likes
+        ALTER TABLE bandanas.piece_likes
         ADD CONSTRAINT fk_piece_likes_user_id
         FOREIGN KEY (user_id) 
-        REFERENCES potterbase.profiles(id) 
+        REFERENCES bandanas.profiles(id) 
         ON DELETE CASCADE;
     END IF;
 END $$;

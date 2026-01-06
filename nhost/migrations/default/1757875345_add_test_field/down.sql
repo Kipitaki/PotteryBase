@@ -1,1 +1,1 @@
-ALTER TABLE potterbase.piece DROP COLUMN test_field;
+ALTER TABLE bandanas.piece DROP COLUMN test_field;

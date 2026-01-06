@@ -1,6 +1,6 @@
 table:
   name: events
-  schema: potterbase
+  schema: bandanas
 insert_permissions:
   - role: user
     permission:

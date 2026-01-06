@@ -1,1 +1,1 @@
-DROP INDEX IF EXISTS "potterbase"."piece_likes_piece_id_idx";
+DROP INDEX IF EXISTS "bandanas"."piece_likes_piece_id_idx";

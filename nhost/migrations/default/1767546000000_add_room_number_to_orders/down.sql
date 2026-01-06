@@ -1,4 +1,4 @@
 -- Remove the room_number column from orders table
-ALTER TABLE potterbase.orders
+ALTER TABLE bandanas.orders
 DROP COLUMN IF EXISTS room_number;
 

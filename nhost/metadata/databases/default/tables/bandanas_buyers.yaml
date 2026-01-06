@@ -1,6 +1,6 @@
 table:
   name: buyers
-  schema: potterbase
+  schema: bandanas
 array_relationships:
   - name: buyer_addresses
     using:
@@ -8,11 +8,11 @@ array_relationships:
         column: buyer_id
         table:
           name: buyer_addresses
-          schema: potterbase
+          schema: bandanas
   - name: orders
     using:
       foreign_key_constraint_on:
         column: buyer_id
         table:
           name: orders
-          schema: potterbase
+          schema: bandanas

@@ -1,4 +1,4 @@
 -- Could not auto-generate a down migration.
 -- Please write an appropriate down migration for the SQL below:
--- alter table "potterbase"."piece" add column "price2" text
+-- alter table "bandanas"."piece" add column "price2" text
 --  null;

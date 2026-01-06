@@ -1,7 +1,7 @@
-CREATE TABLE potterbase.profile_glaze (
+CREATE TABLE bandanas.profile_glaze (
   id SERIAL PRIMARY KEY,
-  profile_id UUID NOT NULL REFERENCES potterbase.profiles(id) ON DELETE CASCADE,
-  glaze_id INTEGER NOT NULL REFERENCES potterbase.glaze(id) ON DELETE CASCADE,
+  profile_id UUID NOT NULL REFERENCES bandanas.profiles(id) ON DELETE CASCADE,
+  glaze_id INTEGER NOT NULL REFERENCES bandanas.glaze(id) ON DELETE CASCADE,
   quantity NUMERIC,
   unit TEXT,
   location TEXT,
@@ -12,9 +12,9 @@ CREATE TABLE potterbase.profile_glaze (
   UNIQUE (profile_id, glaze_id)
 );
 
-CREATE TABLE potterbase.class_glaze (
+CREATE TABLE bandanas.class_glaze (
   id SERIAL PRIMARY KEY,
-  glaze_id INTEGER NOT NULL REFERENCES potterbase.glaze(id) ON DELETE CASCADE,
+  glaze_id INTEGER NOT NULL REFERENCES bandanas.glaze(id) ON DELETE CASCADE,
   quantity NUMERIC,
   unit TEXT,
   location TEXT,
@@ -26,10 +26,10 @@ CREATE TABLE potterbase.class_glaze (
 );
 
 CREATE TRIGGER set_profile_glaze_updated_at
-BEFORE UPDATE ON potterbase.profile_glaze
+BEFORE UPDATE ON bandanas.profile_glaze
 FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
 
 CREATE TRIGGER set_class_glaze_updated_at
-BEFORE UPDATE ON potterbase.class_glaze
+BEFORE UPDATE ON bandanas.class_glaze
 FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp_updated_at();
 

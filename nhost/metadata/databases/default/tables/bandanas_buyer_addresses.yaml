@@ -1,6 +1,6 @@
 table:
   name: buyer_addresses
-  schema: potterbase
+  schema: bandanas
 object_relationships:
   - name: buyer
     using:
@@ -12,7 +12,7 @@ array_relationships:
         column: address_id
         table:
           name: orders
-          schema: potterbase
+          schema: bandanas
 insert_permissions:
   - role: user
     permission:

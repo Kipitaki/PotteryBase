@@ -1,1 +1,1 @@
-alter table "potterbase"."piece" drop column "price2" cascade;
+alter table "bandanas"."piece" drop column "price2" cascade;

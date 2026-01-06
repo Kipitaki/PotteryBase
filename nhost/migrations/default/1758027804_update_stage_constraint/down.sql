@@ -1,8 +1,8 @@
 -- Revert the stage_valid constraint to original stage names
-ALTER TABLE potterbase.piece_stage_history 
+ALTER TABLE bandanas.piece_stage_history 
 DROP CONSTRAINT stage_valid;
 
-ALTER TABLE potterbase.piece_stage_history 
+ALTER TABLE bandanas.piece_stage_history 
 ADD CONSTRAINT stage_valid CHECK (
   stage = ANY (ARRAY[
     'lump'::text, 

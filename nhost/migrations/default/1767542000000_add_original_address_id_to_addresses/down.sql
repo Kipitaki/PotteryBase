@@ -1,7 +1,7 @@
 -- Remove index
-DROP INDEX IF EXISTS potterbase.idx_buyer_addresses_original_address_id;
+DROP INDEX IF EXISTS bandanas.idx_buyer_addresses_original_address_id;
 
 -- Remove column
-ALTER TABLE potterbase.buyer_addresses
+ALTER TABLE bandanas.buyer_addresses
 DROP COLUMN IF EXISTS original_address_id;
 

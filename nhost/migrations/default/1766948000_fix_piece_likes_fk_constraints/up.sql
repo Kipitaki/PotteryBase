@@ -9,18 +9,18 @@ BEGIN
     FOR constraint_name IN 
         SELECT conname 
         FROM pg_constraint 
-        WHERE conrelid = 'potterbase.piece_likes'::regclass 
+        WHERE conrelid = 'bandanas.piece_likes'::regclass 
           AND contype = 'f'
           AND conkey::text LIKE '%user_id%'
     LOOP
-        EXECUTE format('ALTER TABLE potterbase.piece_likes DROP CONSTRAINT IF EXISTS %I', constraint_name);
+        EXECUTE format('ALTER TABLE bandanas.piece_likes DROP CONSTRAINT IF EXISTS %I', constraint_name);
     END LOOP;
     
     -- Create a single, clean foreign key constraint
-    ALTER TABLE potterbase.piece_likes
+    ALTER TABLE bandanas.piece_likes
     ADD CONSTRAINT fk_piece_likes_user_id
     FOREIGN KEY (user_id) 
-    REFERENCES potterbase.profiles(id) 
+    REFERENCES bandanas.profiles(id) 
     ON DELETE CASCADE;
 END $$;
 
