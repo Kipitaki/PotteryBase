@@ -71,6 +71,18 @@
           :class="activeTab === 'add' ? 'nav-btn-active' : ''"
         />
 
+        <!-- Bandanas (Admin only) -->
+        <q-btn
+          v-if="isAdmin"
+          unelevated
+          color="purple"
+          icon="inventory"
+          label="Bandanas"
+          @click="goBandanas"
+          no-caps
+          :class="activeTab === 'bandanas' ? 'nav-btn-active' : ''"
+        />
+
         <!-- User dropdown -->
         <user-dropdown />
       </div>
@@ -127,6 +139,19 @@
           :class="activeTab === 'add' ? 'nav-btn-active-mobile' : ''"
         />
 
+        <!-- Bandanas (Admin only) -->
+        <q-btn
+          v-if="isAdmin"
+          flat
+          dense
+          round
+          icon="inventory"
+          size="sm"
+          color="purple"
+          @click="goBandanas"
+          :class="activeTab === 'bandanas' ? 'nav-btn-active-mobile' : ''"
+        />
+
         <!-- User dropdown -->
         <user-dropdown />
       </div>
@@ -138,9 +163,11 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserDropdown from 'src/components/UserDropdown.vue'
+import { useAdmin } from 'src/composables/useAdmin'
 
 const route = useRoute()
 const router = useRouter()
+const { isAdmin } = useAdmin()
 
 const activeTab = computed(() => {
   const path = route.path
@@ -148,6 +175,7 @@ const activeTab = computed(() => {
   if (path.startsWith('/shelf')) return 'shelf'
   if (path.startsWith('/glazes')) return 'glazes'
   if (path.startsWith('/add')) return 'add'
+  if (path.startsWith('/bandanas')) return 'bandanas'
   return ''
 })
 
@@ -161,6 +189,10 @@ function goShelf() {
 
 function goGlazes() {
   router.push('/glazes')
+}
+
+function goBandanas() {
+  router.push('/bandanas')
 }
 
 function onSearchClick() {
