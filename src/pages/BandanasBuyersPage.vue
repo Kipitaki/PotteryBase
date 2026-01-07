@@ -3,17 +3,10 @@
     <div class="row items-center justify-between q-mb-md">
       <div>
         <div class="text-h5 text-weight-bold">Buyers</div>
-        <div class="text-caption text-grey-7 q-mt-xs">
-          Manage buyer information
-        </div>
+        <div class="text-caption text-grey-7 q-mt-xs">Manage buyer information</div>
       </div>
       <div class="row q-gutter-sm">
-        <q-btn
-          color="purple"
-          icon="upload_file"
-          label="Import CSV"
-          @click="csvDialog = true"
-        />
+        <q-btn color="purple" icon="upload_file" label="Import CSV" @click="csvDialog = true" />
         <q-btn
           color="purple"
           icon="add"
@@ -119,9 +112,7 @@
         </q-tab-panels>
 
         <div v-if="csvPreview.length" class="q-mt-md">
-          <div class="text-subtitle2 q-mb-sm">
-            Preview ({{ csvPreview.length }} rows)
-          </div>
+          <div class="text-subtitle2 q-mb-sm">Preview ({{ csvPreview.length }} rows)</div>
           <q-table
             :rows="csvPreview.slice(0, 10)"
             :columns="csvColumns"
@@ -138,10 +129,7 @@
         </div>
 
         <div v-if="csvImportResults" class="q-mt-md">
-          <q-banner
-            :class="csvImportResults.failed > 0 ? 'bg-warning' : 'bg-positive'"
-            rounded
-          >
+          <q-banner :class="csvImportResults.failed > 0 ? 'bg-warning' : 'bg-positive'" rounded>
             <template v-slot:avatar>
               <q-icon
                 :name="csvImportResults.failed > 0 ? 'warning' : 'check_circle'"
@@ -188,21 +176,15 @@
         <div class="text-h6">Delete Buyer</div>
       </q-card-section>
       <q-card-section>
-        Are you sure you want to delete {{ buyerToDelete?.first_name }} {{ buyerToDelete?.last_name }}?
+        Are you sure you want to delete {{ buyerToDelete?.first_name }}
+        {{ buyerToDelete?.last_name }}?
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="purple" v-close-popup />
-        <q-btn
-          flat
-          label="Delete"
-          color="negative"
-          :loading="deleting"
-          @click="handleDelete"
-        />
+        <q-btn flat label="Delete" color="negative" :loading="deleting" @click="handleDelete" />
       </q-card-actions>
     </q-card>
   </q-dialog>
-
 </template>
 
 <script setup>
@@ -332,7 +314,6 @@ async function handleDelete() {
   }
 }
 
-
 // CSV Parsing Functions
 function parseCSVLine(line) {
   const result = []
@@ -366,17 +347,19 @@ function parseCSVText(text) {
     // Normalize: remove quotes, lowercase, replace spaces with underscores
     return h.replace(/^"|"$/g, '').toLowerCase().trim().replace(/\s+/g, '_')
   })
-  
+
   // Find required columns (handle various formats)
-  const firstNameIndex = headers.findIndex((h) => 
-    h === 'first_name' || h === 'firstname' || h === 'first'
+  const firstNameIndex = headers.findIndex(
+    (h) => h === 'first_name' || h === 'firstname' || h === 'first',
   )
-  const lastNameIndex = headers.findIndex((h) => 
-    h === 'last_name' || h === 'lastname' || h === 'last'
+  const lastNameIndex = headers.findIndex(
+    (h) => h === 'last_name' || h === 'lastname' || h === 'last',
   )
-  
+
   if (firstNameIndex === -1 || lastNameIndex === -1) {
-    throw new Error('CSV must have "First Name" (or "first_name") and "Last Name" (or "last_name") columns')
+    throw new Error(
+      'CSV must have "First Name" (or "first_name") and "Last Name" (or "last_name") columns',
+    )
   }
 
   // Parse rows
@@ -384,20 +367,20 @@ function parseCSVText(text) {
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i])
     if (values.length === 0 || values.every((v) => !v || !v.trim())) continue // Skip empty rows
-    
+
     const row = { __index: i - 1 }
     headers.forEach((header, idx) => {
       // Remove quotes from values
       const value = values[idx] || ''
       row[header] = value.replace(/^"|"$/g, '').trim()
     })
-    
+
     // Normalize field names (handle various column name formats)
     row.first_name = row.first_name || row.firstname || row.first || ''
     row.last_name = row.last_name || row.lastname || row.last || ''
     row.email = row.email || ''
     row.buyer_id = row.buyer_id || row.buyerid || row.id || ''
-    
+
     rows.push(row)
   }
 
@@ -527,4 +510,3 @@ function closeCsvDialog() {
   importTab.value = 'file'
 }
 </script>
-

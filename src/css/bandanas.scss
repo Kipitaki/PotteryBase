@@ -1,0 +1,12 @@
+// Bandanas-specific color scheme
+// Different from PotteryBase to visually distinguish the sections
+// Uses Quasar's built-in purple color (#9c27b0)
+
+.bandanas-page {
+  // Bandanas pages use purple theme (Quasar's built-in purple color)
+  // This class is added to all Bandanas pages for styling consistency
+}
+
+.bandanas-card {
+  border-left: 4px solid #9c27b0;
+}
