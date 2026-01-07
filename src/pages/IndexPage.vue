@@ -35,6 +35,14 @@
             label="Go to Shelf"
             @click="router.push({ name: 'shelf' })"
           />
+          <q-btn
+            outline
+            color="white"
+            text-color="white"
+            icon="inventory"
+            label="Bandanas"
+            @click="router.push({ name: 'bandanas-home' })"
+          />
         </div>
       </q-card>
 

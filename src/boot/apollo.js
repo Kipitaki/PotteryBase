@@ -5,7 +5,7 @@ import { nhost } from './nhost'
 
 const apolloClient = createApolloClient({
   nhost,
-  connectToDevTools: true,
+  connectToDevTools: process.env.NODE_ENV === 'development' && false, // Disabled to avoid WebSocket connection errors
   cacheConfig: {
     typePolicies: {
       potterbase_piece: {

@@ -1,4 +1,7 @@
--- Create the set_updated_at() function for the potterbase schema if it doesn't exist
+-- Create the bandanas schema
+CREATE SCHEMA IF NOT EXISTS bandanas;
+
+-- Create the set_updated_at() function for the bandanas schema
 CREATE OR REPLACE FUNCTION bandanas.set_updated_at()
 RETURNS trigger AS $$
 BEGIN
