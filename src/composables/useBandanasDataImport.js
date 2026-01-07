@@ -140,6 +140,11 @@ export function useBandanasDataImport() {
       // Parse CSV sections
       const sections = parseCSVSections(csvText)
 
+      // Create ID mapping objects
+      const buyerIdMap = new Map() // old_id -> new_id
+      const eventIdMap = new Map() // old_id -> new_id
+      const addressIdMap = new Map() // old_id -> new_id
+
       // Step 1: Import buyers
       if (sections.buyers.length > 0) {
         await buyersStore.refetch()
@@ -148,6 +153,7 @@ export function useBandanasDataImport() {
         for (let i = 0; i < sections.buyers.length; i++) {
           const row = sections.buyers[i]
           try {
+            const oldBuyerId = row.id
             // Check if buyer exists by first_name and last_name
             const existing = existingBuyers.find(
               (b) =>
@@ -155,22 +161,26 @@ export function useBandanasDataImport() {
                 b.last_name?.toLowerCase().trim() === row.last_name?.toLowerCase().trim()
             )
 
+            let newBuyerId
             if (existing) {
-              // Update existing buyer
-              await buyersStore.updateBuyer(existing.id, {
-                email: row.email || existing.email,
-                original_buyer_id: row.original_buyer_id || existing.original_buyer_id,
-              })
+              // Buyer already exists - just map the ID, don't update
+              newBuyerId = existing.id
               results.buyers.success++
             } else {
               // Create new buyer
-              await buyersStore.createBuyer({
+              const newBuyer = await buyersStore.createBuyer({
                 first_name: row.first_name,
                 last_name: row.last_name,
                 email: row.email || null,
                 original_buyer_id: row.original_buyer_id || null,
               })
+              newBuyerId = newBuyer.id
               results.buyers.success++
+            }
+
+            // Map old ID to new ID
+            if (oldBuyerId && newBuyerId) {
+              buyerIdMap.set(oldBuyerId, newBuyerId)
             }
           } catch (error) {
             results.buyers.failed++
@@ -192,6 +202,7 @@ export function useBandanasDataImport() {
         for (let i = 0; i < sections.events.length; i++) {
           const row = sections.events[i]
           try {
+            const oldEventId = row.id
             // Check if event exists by name and year
             const existing = existingEvents.find(
               (e) =>
@@ -199,25 +210,14 @@ export function useBandanasDataImport() {
                 e.year === parseInt(row.year)
             )
 
+            let newEventId
             if (existing) {
-              // Update existing event
-              await eventsStore.updateEvent(existing.id, {
-                price_single: parseFloat(row.price_single) || 0,
-                price_multi: parseFloat(row.price_multi) || 0,
-                active: row.active === 'true' || row.active === true,
-                bandana_cost: row.bandana_cost ? parseFloat(row.bandana_cost) : null,
-                freight: row.freight ? parseFloat(row.freight) : null,
-                fee_tax_transaction_fees: row.fee_tax_transaction_fees
-                  ? parseFloat(row.fee_tax_transaction_fees)
-                  : null,
-                total_qty: row.total_qty ? parseInt(row.total_qty) : null,
-                image_url: row.image_url || null,
-                freight_out: row.freight_out ? parseFloat(row.freight_out) : null,
-              })
+              // Event already exists - just map the ID, don't update
+              newEventId = existing.id
               results.events.success++
             } else {
               // Create new event
-              await eventsStore.createEvent({
+              const newEvent = await eventsStore.createEvent({
                 name: row.name,
                 year: parseInt(row.year),
                 price_single: parseFloat(row.price_single) || 0,
@@ -232,7 +232,13 @@ export function useBandanasDataImport() {
                 image_url: row.image_url || null,
                 freight_out: row.freight_out ? parseFloat(row.freight_out) : null,
               })
+              newEventId = newEvent.id
               results.events.success++
+            }
+
+            // Map old ID to new ID
+            if (oldEventId && newEventId) {
+              eventIdMap.set(oldEventId, newEventId)
             }
           } catch (error) {
             results.events.failed++
@@ -251,15 +257,24 @@ export function useBandanasDataImport() {
         await addressesStore.refetch()
         await buyersStore.refetch()
         const existingAddresses = addressesStore.buyerAddresses.value || []
+        const allBuyers = buyersStore.buyers.value || []
 
         for (let i = 0; i < sections.addresses.length; i++) {
           const row = sections.addresses[i]
           try {
-            // Find buyer by ID or by first_name/last_name
-            let buyerId = row.buyer_id
+            const oldAddressId = row.id
+            const oldBuyerId = row.buyer_id
+
+            // Map old buyer ID to new buyer ID
+            let buyerId = buyerIdMap.get(oldBuyerId)
             if (!buyerId) {
-              // Try to find buyer by name (if provided in orders section)
-              continue // Skip if no buyer_id
+              // Try to find buyer by ID directly (in case it wasn't in the export)
+              const buyer = allBuyers.find((b) => b.id === oldBuyerId)
+              if (buyer) {
+                buyerId = buyer.id
+              } else {
+                throw new Error(`Buyer not found for ID: ${oldBuyerId}`)
+              }
             }
 
             // Check if address exists
@@ -273,17 +288,14 @@ export function useBandanasDataImport() {
                 a.postal_code?.trim() === row.postal_code?.trim()
             )
 
+            let newAddressId
             if (existing) {
-              // Update existing address
-              await addressesStore.updateBuyerAddress(existing.id, {
-                address_line2: row.address_line2 || null,
-                country: row.country || 'US',
-                original_address_id: row.original_address_id || null,
-              })
+              // Address already exists - just map the ID, don't update
+              newAddressId = existing.id
               results.addresses.success++
             } else {
               // Create new address
-              await addressesStore.createBuyerAddress({
+              const newAddress = await addressesStore.createBuyerAddress({
                 buyer_id: buyerId,
                 address_line1: row.address_line1,
                 address_line2: row.address_line2 || null,
@@ -293,7 +305,13 @@ export function useBandanasDataImport() {
                 country: row.country || 'US',
                 original_address_id: row.original_address_id || null,
               })
+              newAddressId = newAddress.id
               results.addresses.success++
+            }
+
+            // Map old address ID to new address ID
+            if (oldAddressId && newAddressId) {
+              addressIdMap.set(oldAddressId, newAddressId)
             }
           } catch (error) {
             results.addresses.failed++
@@ -320,54 +338,103 @@ export function useBandanasDataImport() {
         for (let i = 0; i < sections.orders.length; i++) {
           const row = sections.orders[i]
           try {
-            // Find buyer by ID or by name
-            let buyerId = row.buyer_id
-            if (!buyerId && row.buyer_first_name && row.buyer_last_name) {
-              const buyer = allBuyers.find(
-                (b) =>
-                  b.first_name?.toLowerCase().trim() ===
-                    row.buyer_first_name?.toLowerCase().trim() &&
-                  b.last_name?.toLowerCase().trim() === row.buyer_last_name?.toLowerCase().trim()
-              )
-              if (buyer) buyerId = buyer.id
+            // Map old buyer ID to new buyer ID
+            const oldBuyerId = row.buyer_id
+            let buyerId = buyerIdMap.get(oldBuyerId)
+            if (!buyerId) {
+              // Try to find buyer by name as fallback
+              if (row.buyer_first_name && row.buyer_last_name) {
+                const buyer = allBuyers.find(
+                  (b) =>
+                    b.first_name?.toLowerCase().trim() ===
+                      row.buyer_first_name?.toLowerCase().trim() &&
+                    b.last_name?.toLowerCase().trim() === row.buyer_last_name?.toLowerCase().trim()
+                )
+                if (buyer) buyerId = buyer.id
+              }
+              // Try direct ID lookup as last resort
+              if (!buyerId) {
+                const buyer = allBuyers.find((b) => b.id === oldBuyerId)
+                if (buyer) buyerId = buyer.id
+              }
             }
             if (!buyerId) {
-              throw new Error('Buyer not found')
+              throw new Error(`Buyer not found for ID: ${oldBuyerId}`)
             }
 
-            // Find event by ID or by name/year
-            let eventId = row.event_id
-            if (!eventId && row.event_name && row.event_year) {
-              const event = allEvents.find(
-                (e) =>
-                  e.name?.toLowerCase().trim() === row.event_name?.toLowerCase().trim() &&
-                  e.year === parseInt(row.event_year)
-              )
-              if (event) eventId = event.id
+            // Map old event ID to new event ID
+            const oldEventId = row.event_id
+            let eventId = eventIdMap.get(oldEventId)
+            if (!eventId) {
+              // Try to find event by name/year as fallback
+              if (row.event_name && row.event_year) {
+                const event = allEvents.find(
+                  (e) =>
+                    e.name?.toLowerCase().trim() === row.event_name?.toLowerCase().trim() &&
+                    e.year === parseInt(row.event_year)
+                )
+                if (event) eventId = event.id
+              }
+              // Try direct ID lookup as last resort
+              if (!eventId) {
+                const event = allEvents.find((e) => e.id === oldEventId)
+                if (event) eventId = event.id
+              }
             }
             if (!eventId) {
-              throw new Error('Event not found')
+              throw new Error(`Event not found for ID: ${oldEventId}`)
             }
 
-            // Find address by ID or by details
-            let addressId = row.address_id || null
-            if (!addressId && row.address_line1 && row.city && row.postal_code) {
-              const address = allAddresses.find(
-                (a) =>
-                  a.buyer_id === buyerId &&
-                  a.address_line1?.toLowerCase().trim() ===
-                    row.address_line1?.toLowerCase().trim() &&
-                  a.city?.toLowerCase().trim() === row.city?.toLowerCase().trim() &&
-                  a.postal_code?.trim() === row.postal_code?.trim()
+            // Map old address ID to new address ID
+            const oldAddressId = row.address_id
+            let addressId = oldAddressId ? addressIdMap.get(oldAddressId) : null
+            if (!addressId && oldAddressId) {
+              // Try to find address by details as fallback
+              if (row.address_line1 && row.city && row.postal_code) {
+                const address = allAddresses.find(
+                  (a) =>
+                    a.buyer_id === buyerId &&
+                    a.address_line1?.toLowerCase().trim() ===
+                      row.address_line1?.toLowerCase().trim() &&
+                    a.city?.toLowerCase().trim() === row.city?.toLowerCase().trim() &&
+                    a.postal_code?.trim() === row.postal_code?.trim()
+                )
+                if (address) addressId = address.id
+              }
+              // Try direct ID lookup as last resort
+              if (!addressId) {
+                const address = allAddresses.find((a) => a.id === oldAddressId)
+                if (address) addressId = address.id
+              }
+            }
+
+            // Check if order already exists
+            // First check by order_number if available
+            let existingOrder = null
+            if (row.order_number) {
+              existingOrder = ordersStore.orders.value.find(
+                (o) => o.order_number === row.order_number
               )
-              if (address) addressId = address.id
             }
 
-            // Check if order exists by buyer_id and event_id (and optionally order_number)
-            const existingOrder = row.order_number
-              ? ordersStore.orders.value.find((o) => o.order_number === row.order_number)
-              : null
+            // If not found by order_number, check by buyer + event + order_date
+            if (!existingOrder) {
+              const orderDate = row.order_date || new Date().toISOString()
+              existingOrder = ordersStore.orders.value.find(
+                (o) =>
+                  o.buyer_id === buyerId &&
+                  o.event_id === eventId &&
+                  o.order_date === orderDate
+              )
+            }
 
+            // If order already exists, skip it
+            if (existingOrder) {
+              results.orders.success++
+              continue
+            }
+
+            // Create new order
             const orderData = {
               buyer_id: buyerId,
               address_id: addressId,
@@ -396,15 +463,8 @@ export function useBandanasDataImport() {
               notes: row.notes || null,
             }
 
-            if (existingOrder) {
-              // Update existing order
-              await ordersStore.updateOrder(existingOrder.id, orderData)
-              results.orders.success++
-            } else {
-              // Create new order
-              await ordersStore.createOrder(orderData)
-              results.orders.success++
-            }
+            await ordersStore.createOrder(orderData)
+            results.orders.success++
           } catch (error) {
             results.orders.failed++
             results.orders.errors.push({
@@ -432,10 +492,7 @@ export function useBandanasDataImport() {
             )
 
             if (existing) {
-              // Update existing rate
-              await shippingRatesStore.updateShippingRate(existing.id, {
-                cost: parseFloat(row.cost) || 0,
-              })
+              // Rate already exists - skip it
               results.shipping_rates.success++
             } else {
               // Create new rate
