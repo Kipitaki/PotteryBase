@@ -1,5 +1,19 @@
 <template>
   <q-page padding class="bg-grey-1 bandanas-page">
+    <!-- Local Only Banner -->
+    <q-banner
+      v-if="isLocal"
+      class="bg-warning text-dark q-mb-md"
+      icon="warning"
+      rounded
+    >
+      <template v-slot:avatar>
+        <q-icon name="warning" color="dark" />
+      </template>
+      <div class="text-weight-bold">Not Here, Go to the Remote</div>
+      <div class="text-caption">Remember: Only enter orders on the remote site now.</div>
+    </q-banner>
+
     <div class="row items-center justify-between q-mb-md">
       <div>
         <div class="text-h5 text-weight-bold">Orders</div>
@@ -336,8 +350,8 @@
       <q-card-section>
         <div class="text-h6">Import Tracking Numbers</div>
         <div class="text-caption text-grey-7 q-mt-xs">
-          Upload a CSV file with Order Number and Tracking Number columns. Orders will be updated to
-          "Tracking Created" status.
+          Upload a CSV file with Order Number, Tracking Number, and optionally Actual Shipping Cost columns. 
+          Orders will be updated to "Tracking Created" status and actual shipping cost if provided.
         </div>
       </q-card-section>
       <q-card-section>
@@ -565,6 +579,10 @@ const ordersStore = useOrdersStore()
 const buyersStore = useBuyersStore()
 const addressesStore = useBuyerAddressesStore()
 const eventsStore = useEventsStore()
+
+// Check if running locally
+const isLocal =
+  process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost'
 
 const showDeleteConfirm = ref(false)
 const orderToDelete = ref(null)
@@ -1652,6 +1670,15 @@ async function handleTrackingImport() {
       (h) => h.toLowerCase().includes('order') || h.toLowerCase().includes('stamp2'),
     )
     const trackingIndex = header.findIndex((h) => h.toLowerCase().includes('tracking'))
+    // Look for shipping cost column - check for various possible names
+    const shippingCostIndex = header.findIndex(
+      (h) =>
+        h.toLowerCase().includes('shipping') ||
+        h.toLowerCase().includes('postage') ||
+        (h.toLowerCase().includes('actual') && h.toLowerCase().includes('cost')) ||
+        h.toLowerCase().includes('actual_postage') ||
+        h.toLowerCase().includes('actual shipping'),
+    )
 
     if (orderNumberIndex === -1) {
       throw new Error('Could not find Order Number column (look for "Order" or "Stamp2")')
@@ -1668,6 +1695,7 @@ async function handleTrackingImport() {
         const row = parseCSVLine(lines[i])
         const orderNumber = row[orderNumberIndex]?.trim()
         const trackingNumber = row[trackingIndex]?.trim()
+        const shippingCostValue = shippingCostIndex !== -1 ? row[shippingCostIndex]?.trim() : null
 
         if (!orderNumber) {
           results.failed++
@@ -1699,11 +1727,22 @@ async function handleTrackingImport() {
           continue
         }
 
-        // Update order with tracking number and status
-        await ordersStore.updateOrder(order.id, {
+        // Prepare update data
+        const updateData = {
           tracking_number: trackingNumber,
           status: 'Tracking Created',
-        })
+        }
+
+        // Parse and add actual shipping cost if provided
+        if (shippingCostValue) {
+          const shippingCost = parseFloat(shippingCostValue)
+          if (!isNaN(shippingCost) && shippingCost >= 0) {
+            updateData.actual_postage_cost = shippingCost
+          }
+        }
+
+        // Update order with tracking number, status, and shipping cost
+        await ordersStore.updateOrder(order.id, updateData)
 
         results.success++
       } catch (error) {

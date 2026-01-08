@@ -1,5 +1,14 @@
 <template>
   <q-page padding class="bg-grey-1 bandanas-page">
+    <!-- Local Only Banner -->
+    <q-banner v-if="isLocal" class="bg-warning text-dark q-mb-md" icon="warning" rounded>
+      <template v-slot:avatar>
+        <q-icon name="warning" color="dark" />
+      </template>
+      <div class="text-weight-bold">Not Here, Go to the Remote</div>
+      <div class="text-caption">Remember: Only enter orders on the remote site now.</div>
+    </q-banner>
+
     <div class="row items-center justify-between q-mb-md">
       <div>
         <div class="text-h4 text-weight-bold">Bandanas Management</div>
@@ -213,6 +222,9 @@ import { useBandanasDataImport } from 'src/composables/useBandanasDataImport'
 
 const router = useRouter()
 const $q = useQuasar()
+
+// Check if running locally
+const isLocal = process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost'
 
 const { exportAllData } = useBandanasDataExport()
 const { importAllData } = useBandanasDataImport()
